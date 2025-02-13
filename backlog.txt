@@ -1,0 +1,10 @@
+High Prority:
+1 - Figure out what the deal with core_mod.xp is
+2 - Just get the server set up and running with 100 members, 
+I have a sneaking suspicion that xpilots is actually the way to get 100 members
+in a server, just based on the fact that none of the scripts refrence xpilots_mod. 
+But idk im just guessing with the little information I have. This codebase is really bad 
+dude. 
+3 - I think core_controller.py is still using a CGA, cut that 
+
+Low Prority:
