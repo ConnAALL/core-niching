@@ -162,7 +162,7 @@ class Evolver():
         return chromosome
 
     @classmethod
-    def write_chromosome_to_file(cls, chromosome, filename, ftype):
+    def write_chromosome_to_file(cls, chromosome, filename, ftype, repo_root):
         dataPath = os.path.join(repo_root, 'data', filename)
         with open(dataPath, ftype) as file:
             file.write("\n")

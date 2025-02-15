@@ -12,17 +12,15 @@ sys.path.append(parent_dir)
 
 from dotenv import load_dotenv
 load_dotenv()
-QUEUE_ADDR = os.getenv("QUEUE_ADDR")    
+QUEUE_ADDR = os.getenv("QUEUE_ADDR")
 
 class ChromeID(BaseModel):
     quadrant: int = -1
     file_name: str = ""
 
-
 class ChromMap(BaseModel):
     chrom_file: str
     agent_name: str
-
 
 chrom_map = {}
 queue_1 = []
@@ -32,11 +30,9 @@ queue_4 = []
 
 stats = {"connections": 0, "error_requests": 0}
 
-
 queues = [queue_1, queue_2, queue_3, queue_4]
 
 app = FastAPI()
-
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -45,23 +41,17 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     content = {'status_code': 10422, 'message': exc_str, 'data': None}
     return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-
 @app.post("/update_map")
 async def update_map(data: ChromMap):
-    #print(data)
     chrom_map.update({data.agent_name: data.chrom_file})
-    #print(chrom_map)
-
 
 @app.get("/get_map_{name}")
 def get_map(name):
     return {chrom_map[name]}
 
-    
 @app.get("/stats")
 def get_stats():
     return stats
-
 
 @app.get("/is_alive")
 def is_alive():
@@ -69,11 +59,9 @@ def is_alive():
     stats["connections"] += 1
     return {0}
 
-
 @app.get("/check_queues")
 def get_queues():
     return {"queues": queues}
-
 
 @app.get("/req_{num}")
 def get_chrom(num):
@@ -93,7 +81,6 @@ def get_chrom(num):
     chromosome = queues[num].pop(0)
     print("Chromosome fetched from Q:{}".format(num + 1))
     return {"chromosome": chromosome}
-
 
 @app.post("/post")
 async def post_data(chromosome: ChromeID):
@@ -118,7 +105,6 @@ async def post_data(chromosome: ChromeID):
     return({"queue_1": queue_1, "queue_2": queue_2, "queue_3": queue_3, 
             "queue_4": queue_4})
 
-
 @app.get("/info")
 def get_info():
     infos = {"chrom_map": chrom_map, "stats": stats, "queues": queues}
@@ -126,5 +112,4 @@ def get_info():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, QUEUE_ADDR, port=8000)
-    #uvicorn.run(app, QUEUE_ADDR, port=8000, log_level="critical")
+    uvicorn.run(app, host=QUEUE_ADDR, port=8000)

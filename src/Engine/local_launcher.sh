@@ -11,5 +11,5 @@ for ((i = 1; i <= 32; i++)); do
     )
 done
 
-echo "Launched 32 agents on machine, exiting.";
-exit;
+#echo "Launched 32 agents on machine, exiting.";
+#exit;

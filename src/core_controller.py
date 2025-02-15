@@ -15,6 +15,13 @@ load_dotenv()
 HEADLESS = os.getenv("HEADLESS") 
 SERVER_IP = os.getenv("SERVER_IP")
 
+
+# Get the directory of the current script
+current_dir = os.path.dirname(os.path.realpath(__file__))
+
+# Go back to the root of the repository
+repo_root = os.path.abspath(os.path.join(current_dir, ".."))
+
 class CoreAgent(NetworkInterface, ShipData):
     def __init__(self, bot_name):
         NetworkInterface.__init__(self)
@@ -155,7 +162,7 @@ class CoreAgent(NetworkInterface, ShipData):
         print(write_score)
 
         Evolver.write_chromosome_to_file(output, "{}.json"
-                                         .format(self.chrom_name), ftype)
+                                         .format(self.chrom_name), ftype, repo_root)
         self.update_chrom_map()
         self.spawn_score = self.score
 
@@ -279,8 +286,7 @@ class CoreAgent(NetworkInterface, ShipData):
                 file.seek(pos, os.SEEK_SET)
                 file.truncate()
 
-
-def loop(self):
+def loop():
     global agent
     global bot_name
     if agent is None:
@@ -340,7 +346,6 @@ def loop(self):
         else:
             agent.process_server_feed()
             agent.frames_dead += 1
-            # agent.SPAWN_QUAD = None
             agent.agent_data["X"] = -1
             agent.agent_data["Y"] = -1
             if agent.frames_dead >= 5:
@@ -348,11 +353,11 @@ def loop(self):
                 agent.frames_dead = -2000
 
     except Exception as e:
-        print("Exception")
+        print("Exception in AI Loop")
         print(str(e))
         traceback.print_exc()
         traceback_str = traceback.format_exc()
-        fs = os.path.join(self.repo_root, 'tracebacks', f'{agent.chrom_name}.txt')
+        fs = os.path.join(agent.repo_root, 'tracebacks', f'{agent.chrom_name}.txt')
         with open(fs, "w") as f:
             f.write(traceback_str)
             f.write(str(agent.bin_chromosome))
@@ -361,13 +366,35 @@ def loop(self):
         ai.quitAI()
 
 def main():
-    global bot_name
-    bot_name = "CA_{}".format(sys.argv[1])
-    global agent
-    agent = None
-    if HEADLESS:
-        ai.headlessMode()
-    ai.start(loop, ["-name", bot_name, "-join", SERVER_IP])
+    try:
+        global bot_name
+        bot_name = "CA_{}".format(sys.argv[1])
+        global agent
+        agent = None
+        if HEADLESS:
+            ai.headlessMode()
+        ai.start(loop, ["-name", bot_name, "-join", SERVER_IP])
+    except Exception as e:
+        print("Exception in main")
+        print(str(e))
+        traceback.print_exc()
+
+        traceback_str = traceback.format_exc()
+
+        # Write the traceback to file
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        traceback_dir = os.path.join(repo_root, "tracebacks")
+
+        # Ensure the traceback directory exists
+        os.makedirs(traceback_dir, exist_ok=True)
+
+        # Construct the traceback file path
+        traceback_file_path = os.path.join(traceback_dir, "traceback_main_{}.txt".format(bot_name))
+
+        with open(traceback_file_path, "w") as file:
+            file.write(traceback_str)
+        
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

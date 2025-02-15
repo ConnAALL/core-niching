@@ -1,2 +1,5 @@
 __pycache__
 .env
+src/chromosome.py
+src/old_core_controller_ref.py
+/tracebacks
