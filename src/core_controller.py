@@ -12,9 +12,8 @@ from Evolver import Evolver
 from ActionGene import ActionGene
 
 load_dotenv()
-HEADLESS = os.getenv("HEADLESS") 
+DEFAULT_HEADLESS = os.getenv("DEFAULT_HEADLESS") 
 SERVER_IP = os.getenv("SERVER_IP")
-
 
 # Get the directory of the current script
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -132,7 +131,8 @@ class CoreAgent(NetworkInterface, ShipData):
                     and "ratio" not in server_message \
                     and "crashed" not in server_message \
                     and "entered" not in server_message \
-                    and "suicide" not in server_message:
+                    and "suicide" not in server_message \
+                    and "How strange!" not in server_message:
                 self.feed_history.append(server_message)
 
         killer = "null"
@@ -151,6 +151,18 @@ class CoreAgent(NetworkInterface, ShipData):
         elif victim == self.bot_name:
             self.last_death = output
 
+    def log_chat_message(self, message): # Log each system message, will probs delete later testing something
+        try:
+            log_dir = os.path.join(self.repo_root, 'logs')
+            os.makedirs(log_dir, exist_ok=True)
+            log_file_path = os.path.join(log_dir, f'chat_log_{self.chrom_name}.txt')
+            with open(log_file_path, 'a') as log_file:
+                log_time = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+                log_file.write(f"{log_time} - {message}\n")
+        except Exception as e:
+            print(f"Failed to log chat message: {e}")
+            print(traceback.format_exc())
+
     def write_soul_data(self, quadrant, ftype="a", score=0.0):
         if score == 0.0:
             write_score = str(0.0)
@@ -158,8 +170,8 @@ class CoreAgent(NetworkInterface, ShipData):
             write_score = str(round(score, 3))
 
         output = [str(quadrant), self.bin_chromosome, write_score]
-        print(output)
-        print(write_score)
+        print(f"Chromesome is: {output}")
+        print(f"Score is: {write_score}")
 
         Evolver.write_chromosome_to_file(output, "{}.json"
                                          .format(self.chrom_name), ftype, repo_root)
@@ -167,15 +179,24 @@ class CoreAgent(NetworkInterface, ShipData):
         self.spawn_score = self.score
 
     def was_killed(self):
+        if self.SPAWN_QUAD is None: # If passed spawn quadrant none
+            print("Agent was passed with SPAWN_QUAD set to None")
+            traceback_str = traceback.format_exc()
+            fs = os.path.join(self.repo_root, 'tracebacks', 'None_somehow_passed_{}.txt'.format(self.chrom_name))
+            with open(fs, "a") as f:
+                f.write(f"Agent {bot_name} with chromosome {self.chrom_name} was passed with SPAWN_QUAD set to None\n")
+                f.write(traceback_str)
+            return 
+        
         agent.update_score()
 
-        print(self.last_death)
+        print(f"Last death is {self.last_death}")
         print(f"Current Score: {self.score}")
         print(f"Spawn Score: {self.spawn_score}")
 
         life_score = self.score - self.spawn_score
         print(f"Score to log: {life_score}")
-        if "null" in self.last_death:
+        if "null" in self.last_death: # If ran into wall, dont crossover
             print("self death")
 
             self.push_chrom(int(self.SPAWN_QUAD), self.chrom_name)
@@ -188,11 +209,11 @@ class CoreAgent(NetworkInterface, ShipData):
         if ai.selfAlive() == 0 and self.crossover_completed is False:
             killer = self.get_mapping(self.last_death[0])
 
-            chromosome_file_name = os.path.join(self.repo_root, 'data', '{}.json'.format(killer))
+            chromosome_file_name = os.path.join(self.repo_root, 'data', '{}.json'.format(killer)) # Find killers chromosome
             
-            print(f"{killer} killed {chromosome_file_name}")
+            print(f"{killer} killed {self.chrom_name}")
 
-            with open(chromosome_file_name, 'r') as f:
+            with open(chromosome_file_name, 'r') as f: # Retrieve data from that chromosome
                 try:
                     chromosome_data = json.loads(f.readlines()[-1])
                 except Exception as e:
@@ -200,7 +221,9 @@ class CoreAgent(NetworkInterface, ShipData):
                     chromosome_data = json.loads(f.readlines()[-1])
 
             new_chromosome = chromosome_data[1]
-            quadrant = chromosome_data[0]
+            quadrant = chromosome_data[0] # Get killers quadrant
+            if quadrant == None: # If the killers quadrant was not yet initalized (ie: Agent was killed early on)
+                quadrant = self.SPAWN_QUAD 
 
             cross_over_child = Evolver.crossover(
                 self.bin_chromosome, new_chromosome)
@@ -210,7 +233,7 @@ class CoreAgent(NetworkInterface, ShipData):
             self.write_soul_data(self.SPAWN_QUAD, "a", score=life_score)
             # POST New chromosome
             self.push_chrom(quadrant, self.chrom_name)  # TODO switch to
-            self.push_chrom(quadrant, self.chrom_name)
+            #self.push_chrom(quadrant, self.chrom_name)
 
             # Prep for fetching new chromosome
             self.bin_chromosome = None  # Erase for new chromosome to load
@@ -304,7 +327,7 @@ def loop():
             if agent.SPAWN_QUAD is not None and agent.bin_chromosome is None:
                 agent.initialize_cga(agent.SPAWN_QUAD)
 
-            if agent.agent_data["X"] != ai.selfX() or agent.agent_data["Y"] != ai.selfY():
+            if agent.agent_data["X"] != ai.selfX() or agent.agent_data["Y"] != ai.selfY(): # If agent is moving update time
                 agent.movement_timer = time.time()
 
             if agent.movement_timer == -1.0:
@@ -312,7 +335,7 @@ def loop():
                 agent.SD = False
                 print("Initial SD timer set")
 
-            if time.time() - agent.movement_timer > 5.0 and not agent.SD:
+            if time.time() - agent.movement_timer > 5.0 and not agent.SD: # If agent hasnt moved for 5 seconds, SD
                 ai.selfDestruct()
                 agent.SD = True
                 print("SD'ing")
@@ -344,20 +367,38 @@ def loop():
             else:
                 agent.update_agent_data()
         else:
+            if agent.SPAWN_QUAD is None and agent.agent_data["X"] != -1 and agent.agent_data["Y"] != -1: # If this agent has not already been processed
+                agent.set_spawn_quad() # Set spawn quad
+            if agent.SPAWN_QUAD is None: # This would imply that SPAWN_QUAD is somehow None but the agent has been processed
+                return # Just skip to next loop
+                try:
+                    raise ValueError("Unexpected state: SPAWN_QUAD is None but agent has been processed")
+                except ValueError as e:
+                    print(str(e))
+                    traceback_str = traceback.format_exc()
+                    fs = os.path.join(agent.repo_root, 'tracebacks', 'unexpected_spawn_quad_none_{}.txt'.format(agent.chrom_name))
+                    with open(fs, "a") as f:
+                        f.write(f"Agent {bot_name} with chromosome {agent.chrom_name} encountered an unexpected state with SPAWN_QUAD set to None\n")
+                        f.write(traceback_str)
+                    ai.quitAI()
+
+            if agent.bin_chromosome is None:
+                agent.initialize_cga(agent.SPAWN_QUAD) # Make this a proper agent
+
             agent.process_server_feed()
             agent.frames_dead += 1
             agent.agent_data["X"] = -1
             agent.agent_data["Y"] = -1
-            if agent.frames_dead >= 5:
+            if agent.frames_dead >= 5:                    
                 agent.was_killed()
-                agent.frames_dead = -2000
+                agent.frames_dead = sys.maxsize * -1 # Agent is dead, so do not crossover until otherwise
 
     except Exception as e:
         print("Exception in AI Loop")
         print(str(e))
         traceback.print_exc()
         traceback_str = traceback.format_exc()
-        fs = os.path.join(agent.repo_root, 'tracebacks', f'{agent.chrom_name}.txt')
+        fs = os.path.join(agent.repo_root, 'tracebacks', 'AI_loop_exception_{}.txt'.format(agent.chrom_name))
         with open(fs, "w") as f:
             f.write(traceback_str)
             f.write(str(agent.bin_chromosome))
@@ -371,9 +412,19 @@ def main():
         bot_name = "CA_{}".format(sys.argv[1])
         global agent
         agent = None
-        if HEADLESS:
+        HEADLESS = ""
+        answers = ["f", "false", "0", "n", "no", "headless_false", "head_false"] # Answers that let you turn headless off
+        if len(sys.argv) > 2: # If we specified we want to run in headless mode or not 
+            ans = sys.argv[2].lower() # Make answer consistent
+            HEADLESS = ans
+        else: # Otherwise rely on env default
+            HEADLESS = DEFAULT_HEADLESS
+        
+        if HEADLESS not in answers: # If we did not argue something that sounds like we don't want it to run in headless, run in headless
             ai.headlessMode()
+        
         ai.start(loop, ["-name", bot_name, "-join", SERVER_IP])
+    
     except Exception as e:
         print("Exception in main")
         print(str(e))

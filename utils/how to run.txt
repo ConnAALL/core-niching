@@ -1,0 +1,2 @@
+Run start_queue_server, then start_xpilots_server. You must do both fresh if starting a new run. Then run launcher to launch 
+a specified amount of agents to run in the core. 

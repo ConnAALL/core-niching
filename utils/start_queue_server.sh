@@ -4,6 +4,8 @@
 SCRIPT_DIR=$(dirname "$0")
 REPO_ROOT=$(dirname "$SCRIPT_DIR")
 
+# Reset all at start of new run
+
 rm -r "$REPO_ROOT/data"
 rm -r "$REPO_ROOT/tracebacks"
 rm -r "$REPO_ROOT/logs"

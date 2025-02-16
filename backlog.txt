@@ -1,8 +1,22 @@
 High Prority:
-1 - make logging work well
-2 - I think core_controller.py is still using a CGA, cut that 
-3 - Xpilots switchbase 1.0 option actually works, but it doesnt work in xpilots_mod, I probs have to ask Jim to help fix this
-4 - make a script that starts xpilots mod server
+\/ the "how strange" part of below might be fixed, gotta run tests overnight to see 
+-2: agent instantly crashes if it runs into its own bullet, huge issue (this happens because a message stating "how strange" is said in chat).
+specifically "agent x was killed by agent x, how strange!". Also, I want to see if this is an issue on xpilots aswell, or if its just xpilots_mod. 
+I also want to see all of the messages being sent, so I know if any of the other ones are messsing up.
+-1: make chrom map log to csv in real time, so I can figure what the hell is going wrong.
+0 - Okay so controllers keep crashing because the stupid mapping isnt working properly because someone decided it would be a good idea to use a pointless
+network and json files instead of awesome csv files im so pissed. I might just have to rewrite chrom_map idk, the alternative is to figure out the stupid 
+bs reason the json decoder keeps deciding None types exist where there is clearly numbers. why is the codebase set up like this >:(. 
+1 - make logging work well (Ie: different folders for each run, different data folders for each run, 
+different tracebacks, organize agents by quadrant)
+2 - then, when its logging stuff properly, get it to track agents avg time spent alive, avg kills, avg runs into walls,
+etc, organized by quadrant, in csv, due to the way this is set up, we arent actually going to be going by bot names, we go by chromesome names (I think),
+3 - make your csvs into cool graphs
+4 - send to parker
+5 - put the agents niched one way into differnet quadrants, see what happens
 
 Low Prority:
-1 - Figure out what the deal with core_mod.xp is
+1 - Xpilots switchbase 1.0 option actually works, but it doesnt work in xpilots_mod, I probs have to ask Jim to help fix this
+
+I think this might be an issue:
+1 - I think core_controller.py is still using a CGA, cut that if it is
