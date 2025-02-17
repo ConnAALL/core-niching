@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+import traceback
 import csv
 import threading
 import time
@@ -13,6 +14,9 @@ QUEUE_ADDR = os.getenv("QUEUE_ADDR")
 class NetworkInterface:
     def __init__(self):
         self.QUEUE_ADDR = "http://" + QUEUE_ADDR + ":8000/"
+        self.repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.error_log_path = os.path.join(self.repo_root, 'tracebacks')
+        os.makedirs(os.path.dirname(self.error_log_path), exist_ok=True)
 
     def push_chrom(self, quadrant, chrom_name):
         data = {"quadrant": quadrant, "file_name": chrom_name}
@@ -23,21 +27,41 @@ class NetworkInterface:
         else:
             print("Error pushing to QS")
 
-    def req_chrom(self, quadrant): # Get chromosome from a specific quadrant
-        re = requests.get(self.QUEUE_ADDR + "req_{}".format(quadrant))
-        print(re.text)
-        chrom_name = re.json()["chromosome"]
 
-        if chrom_name == -1:
-            print("No available chromosome, generating new chromosome")
+    def req_chrom(self, quadrant): 
+        """Get chromosome from a specific quadrant."""
+        try:
+            re = requests.get(self.QUEUE_ADDR + "req_{}".format(quadrant))
+            print(re.text)
+            chrom_name = re.json()["chromosome"]
+
+            if chrom_name == -1:
+                print("No available chromosome, generating new chromosome")
+                return "", ""
+
+            print("Successfully received chromosome name")
+            data_path = os.path.join(self.repo_root, 'data', '{}.json'.format(chrom_name))
+            
+            with open(data_path, 'r') as f:
+                lines = f.readlines()
+                # Read the lines in reverse order to find the closest valid JSON line
+                for line in reversed(lines):
+                    line = line.strip()
+                    if not line:
+                        continue  # skip empty lines
+                    try:
+                        chromosome_data = json.loads(line)
+                        return chromosome_data[1], chrom_name
+                    except json.JSONDecodeError:
+                        continue
+
+            # If no valid line found, log error
+            raise ValueError("No valid JSON line found in file.")
+        
+        except Exception as e:
+            print(f"Failed to request chromosome: {e}")
+            self.log_error(traceback.format_exc(), chrom_name)
             return "", ""
-
-        print("Succesfully recieved chromosome name")
-        data_path = os.path.join(self.repo_root, 'data', '{}.json'.format(chrom_name))
-        with open(data_path, 'r') as f:
-            chromosome_data = json.loads(f.readlines()[-1])
-
-        return chromosome_data[1], chrom_name
 
     def ping_server(self):
         requests.get(self.QUEUE_ADDR + "is_alive")
@@ -50,50 +74,7 @@ class NetworkInterface:
         r = requests.get(self.QUEUE_ADDR + "get_map_{}".format(bot_name))
         return r.json()[0]
     
-    def fetch_chrom_map(self):
-        """Fetch the entire chrom map from the server."""
-        r = requests.get(self.QUEUE_ADDR + "get_chrom_map")
-        if r.status_code == 200:
-            return r.json()
-        else:
-            print("Error fetching chrom map")
-            return None
-
-    def log_chrom_map_to_csv(self, csv_file_path):
-        """Log the entire chrom map to a CSV file."""
-        chrom_map = self.fetch_chrom_map()
-        if chrom_map is not None:
-            with open(csv_file_path, mode='w', newline='') as file:
-                writer = csv.writer(file)
-                # Write header
-                writer.writerow(["Quadrant", "Chromosome Name", "Chromosome Data"])
-                # Write data
-                for entry in chrom_map:
-                    writer.writerow([entry["quadrant"], entry["chrom_name"], json.dumps(entry["chrom_data"])])
-            print(f"Chrom map logged to {csv_file_path}")
-        else:
-            print("Failed to log chrom map to CSV")
-
-    def start_logging_chrom_map(self, csv_file_path, interval=60):
-        """Start logging the chrom map to a CSV file at regular intervals."""
-        if self.chrom_map_thread is None:
-            self.logging = True
-            self.chrom_map_thread = threading.Thread(target=self._log_chrom_map_periodically, args=(csv_file_path, interval))
-            self.chrom_map_thread.start()
-            print("Started logging chrom map to CSV")
-        else:
-            print("Chrom map logging is already running")
-
-    def stop_logging_chrom_map(self):
-        """Stop logging the chrom map to a CSV file."""
-        if self.chrom_map_thread is not None:
-            self.logging = False
-            self.chrom_map_thread.join()
-            self.chrom_map_thread = None
-            print("Stopped logging chrom map to CSV")
-
-    def _log_chrom_map_periodically(self, csv_file_path, interval):
-        """Log the chrom map to a CSV file at regular intervals."""
-        while self.logging:
-            self.log_chrom_map_to_csv(csv_file_path)
-            time.sleep(interval)
+    def log_error(self, error_message, chrom_name):
+        """Log errors to a file."""
+        with open(os.path.join(self.error_log_path, f'improper_json_format_{chrom_name}'), 'a') as log_file:
+            log_file.write(f"{error_message}\n")
