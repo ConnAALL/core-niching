@@ -35,8 +35,9 @@ class CoreAgent(NetworkInterface, ShipData):
 
         self.bot_name = bot_name
 
-        ai.setPower(5)
-
+        ai.setPower(8.0) # Power 5-55, amount of thrust
+        # Trying 5 instead of 8 for now
+        ai.setTurnSpeed(64.0) # Turn speed 5-64
         self.bin_chromosome = None
         self.dec_chromosome = None
         self.current_loop = None
@@ -188,6 +189,7 @@ class CoreAgent(NetworkInterface, ShipData):
                 f.write(traceback_str)
             return 
         
+        
         agent.update_score()
 
         print(f"Last death is {self.last_death}")
@@ -196,7 +198,7 @@ class CoreAgent(NetworkInterface, ShipData):
 
         life_score = self.score - self.spawn_score
         print(f"Score to log: {life_score}")
-        if "null" in self.last_death: # If ran into wall, dont crossover
+        if "null" in self.last_death: # If ran into wall, dont crossover, bin
             print("self death")
 
             self.push_chrom(int(self.SPAWN_QUAD), self.chrom_name)
@@ -321,7 +323,6 @@ def loop():
                 print("Spawn Quadrant: {} ".format(agent.set_spawn_quad()))
                 agent.spawn_score = ai.selfScore()
                 agent.SD = False
-                ai.setTurnSpeed(64.0)
                 agent.update_chrom_map()
 
             if agent.SPAWN_QUAD is not None and agent.bin_chromosome is None:
@@ -389,7 +390,7 @@ def loop():
             agent.frames_dead += 1
             agent.agent_data["X"] = -1
             agent.agent_data["Y"] = -1
-            if agent.frames_dead >= 5:                    
+            if agent.frames_dead >= 5: 
                 agent.was_killed()
                 agent.frames_dead = sys.maxsize * -1 # Agent is dead, so do not crossover until otherwise
 
@@ -424,7 +425,7 @@ def main():
             ai.headlessMode()
         
         ai.start(loop, ["-name", bot_name, "-join", SERVER_IP])
-    
+
     except Exception as e:
         print("Exception in main")
         print(str(e))

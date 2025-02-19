@@ -1,12 +1,13 @@
 High Prority:
-\/ the "how strange" part of below might be fixed, gotta run tests overnight to see 
--2: agent instantly crashes if it runs into its own bullet, huge issue (this happens because a message stating "how strange" is said in chat).
-specifically "agent x was killed by agent x, how strange!". Also, I want to see if this is an issue on xpilots aswell, or if its just xpilots_mod. 
-I also want to see all of the messages being sent, so I know if any of the other ones are messsing up.
--1: make chrom map log to csv in real time, so I can figure what the hell is going wrong.
-0 - Okay so controllers keep crashing because the stupid mapping isnt working properly because someone decided it would be a good idea to use a pointless
-network and json files instead of awesome csv files im so pissed. I might just have to rewrite chrom_map idk, the alternative is to figure out the stupid 
-bs reason the json decoder keeps deciding None types exist where there is clearly numbers. why is the codebase set up like this >:(. 
+
+0 - 99% im not gonna get the network implementation to never have any agents crash. its def closer than it was before, but its probably
+better to just make every agent its own csv file. way easier to read chromosomes that way, agents are tied to their own evolution histories, 
+and thats your logging pretty much taken care of, might be a little messy though, probably should log everything to a master csv at the same time,
+for the logging purposes, then have it capture the latest info from all every 60 seconds, so it can have a graph of how each species evovled over the rounds.
+0.5 - make evolution work way better, crossover is working in a weird way, I think its mutating every time, and I dont even know 
+exactly how it works, it needs to make sense to a point where it not only works well but I could do an extensive writeup about it.
+also unless this next test proves me wrong, i think that it doesnt evolve a way to detect walls at all, that or it isnt mutating enough or 
+is mutating too much I littearly do not know.
 1 - make logging work well (Ie: different folders for each run, different data folders for each run, 
 different tracebacks, organize agents by quadrant)
 2 - then, when its logging stuff properly, get it to track agents avg time spent alive, avg kills, avg runs into walls,
@@ -17,6 +18,9 @@ etc, organized by quadrant, in csv, due to the way this is set up, we arent actu
 
 Low Prority:
 1 - Xpilots switchbase 1.0 option actually works, but it doesnt work in xpilots_mod, I probs have to ask Jim to help fix this
+2 - Make something that logs all of the messages being sent, so I know if any of the other ones are messsing up the evolver.
+3 - I want to test this more but I think turning off SDing will make the agents do better, thats what it looked like in one 
+of the tests I did but I want to run these more to check
 
 I think this might be an issue:
 1 - I think core_controller.py is still using a CGA, cut that if it is

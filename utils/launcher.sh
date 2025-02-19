@@ -2,7 +2,7 @@
 # Get the directory of the current script
 SCRIPT_DIR=$(dirname "$0")
 # Set the number of instances you want to run
-num_instances=60;
+num_instances=119;
 
 # Loop from 1 to num_instances
 for ((i = 1; i <= num_instances; i++)); do
