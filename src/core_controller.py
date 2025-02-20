@@ -314,6 +314,14 @@ class CoreAgent(NetworkInterface, ShipData):
 def loop():
     global agent
     global bot_name
+    global team 
+
+    if team != -1:
+        message = (f"/team {team}")
+        ai.talk(message)
+        print(f"Agent {bot_name} joined team {team}.")
+        team = -1
+    
     if agent is None:
         agent = CoreAgent(bot_name)
 
@@ -414,6 +422,7 @@ def main():
         global agent
         agent = None
         HEADLESS = ""
+
         answers = ["f", "false", "0", "n", "no", "headless_false", "head_false"] # Answers that let you turn headless off
         if len(sys.argv) > 2: # If we specified we want to run in headless mode or not 
             ans = sys.argv[2].lower() # Make answer consistent
@@ -421,6 +430,14 @@ def main():
         else: # Otherwise rely on env default
             HEADLESS = DEFAULT_HEADLESS
         
+        global team
+        if len(sys.argv) > 3:
+            team = int(sys.argv[3]) # Enter team
+        else:
+            team = -1
+        
+        print(team)
+
         if HEADLESS not in answers: # If we did not argue something that sounds like we don't want it to run in headless, run in headless
             ai.headlessMode()
         
