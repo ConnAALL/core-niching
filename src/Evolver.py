@@ -113,23 +113,13 @@ class Evolver():
         for gene in chrome:
             loop = []
             for instruction_gene in gene:
-                # Case for jump chrom
-                if instruction_gene[0] == '1': 
-                    conditional_index = int(instruction_gene[1:5], 2)
-                    loop_number = int(instruction_gene[5:], 2)
+                shoot = bool(int(instruction_gene[1]))
+                thrust = bool(int(instruction_gene[2]))
+                turn_quantity = int(instruction_gene[3:6], 2)
+                turn_target = int(instruction_gene[6:], 2)
 
-                    # Structure: False, conditional index, jump to num
-                    loop.append([False, conditional_index, loop_number])
-
-                # Case for action chromosome
-                else:  
-                    shoot = bool(int(instruction_gene[1]))
-                    thrust = bool(int(instruction_gene[2]))
-                    turn_quantity = int(instruction_gene[3:6], 2)
-                    turn_target = int(instruction_gene[6:], 2)
-
-                    loop.append([True, shoot, thrust, turn_quantity,
-                                turn_target])
+                loop.append([True, shoot, thrust, turn_quantity,
+                            turn_target])
             loops.append(loop)
 
         return loops
@@ -160,16 +150,3 @@ class Evolver():
                 loop.append(gene)
             chromosome.append(loop)
         return chromosome
-
-    @classmethod
-    def write_chromosome_to_file(cls, chromosome, filename, ftype, repo_root):
-        dataPath = os.path.join(repo_root, 'data', filename)
-        with open(dataPath, ftype) as file:
-            file.write("\n")
-            json.dump(chromosome, file)
-
-    @classmethod
-    def log_chromosome_history(cls, chromosome, chrome_number, filename, repo_root):
-        dataPath = os.path.join(repo_root, 'data', 'chromosome_logs', filename)
-        with open(dataPath, "a") as f:
-            f.write("Iteration {}: {} \n".format(chrome_number, chromosome))

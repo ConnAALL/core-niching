@@ -2273,6 +2273,10 @@ static PyObject* py_headlessMode(PyObject* pySelf, PyObject* args) {
 	headless=1;
 	Py_RETURN_NONE;}
 //Oh glorious py_main(), with the regular main(), you just start the Python shell. -.-; -EGG
+static PyObject* py_headlessMode(PyObject* pySelf, PyObject* args) {
+	headless=1;
+	Py_RETURN_NONE;}
+//Oh glorious py_main(), with the regular main(), you just start the Python shell. -.-; -EGG
 static PyObject* py_start(PyObject* pySelf, PyObject* args) {
     int j,k;
     ship_t theShip;
@@ -2281,10 +2285,10 @@ static PyObject* py_start(PyObject* pySelf, PyObject* args) {
     theShip.dir=-1;
     theShip.shield=-1;
     theShip.id=-1;
-    for (j=0;j<128;j++) {	//Initialize allShips for enemy velocity
+    for (j=0;j<128;j++) {   //Initialize allShips for enemy velocity
         for (k=0;k<3;k++) {
             allShips[j][k].vel=-1;
-            allShips[j][k].d=9999;		//needs to be arbitrarily high so that it is sorted correctly in allShips
+            allShips[j][k].d=9999;     //needs to be arbitrarily high so that it is sorted correctly in allShips
             allShips[j][k].ship = theShip;
             allShips[j][k].xVel=-1;
             allShips[j][k].yVel=-1;
@@ -2305,19 +2309,32 @@ static PyObject* py_start(PyObject* pySelf, PyObject* args) {
     PyObject* listObj = PyList_New(0);
     PyObject* strObj;
     PyObject* temp;
-    if (!PyArg_ParseTuple(args, "O|O", &temp, &listObj))
+    PyObject* teamObj = NULL;  //New object for team parameter - John
+    int team_number = -1;  //Default team value
+    //Modified ParseTuple to accept optional team parameter
+    if (!PyArg_ParseTuple(args, "O|Oi", &temp, &listObj, &team_number)) {
         return Py_BuildValue("s","INVALID ARGUMENTS!\n");
+    }
     int argc = PyList_Size(listObj)+1;
-    char* argv[argc];
+    char* argv[argc + (team_number != -1 ? 2 : 0)];  //Add space for team argument if needed
     argv[0] = "xpilot-ng-x11";
+    //Copy regular arguments
     for (i=0; i<argc-1; i++) {
         strObj = PyList_GetItem(listObj, i);
         strObj = PyUnicode_AsEncodedString(strObj,"utf-8","strict");
         argv[i+1] = PyBytes_AS_STRING(strObj);
     }
+    //If team was specified, add it as an argument
+    if (team_number != -1) {
+        char team_arg[32];
+        snprintf(team_arg, sizeof(team_arg), "-team=%d", team_number);
+        argv[argc] = strdup(team_arg);  
+        argc++;
+    }
     //Set AI loop
     args = Py_BuildValue("(O)",temp);
     py_switchLoop(pySelf, args);
+    team = team_number;  //Set the global team variable
     return Py_BuildValue("i",mainAI(argc,argv));
 }
 //Python/C method definitions -EGG
