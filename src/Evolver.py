@@ -109,44 +109,58 @@ class Evolver():
 
     @classmethod
     def read_chrome(cls, chrome):
-        loops = []
-        for gene in chrome:
-            loop = []
-            for instruction_gene in gene:
-                shoot = bool(int(instruction_gene[1]))
-                thrust = bool(int(instruction_gene[2]))
-                turn_quantity = int(instruction_gene[3:6], 2)
-                turn_target = int(instruction_gene[6:], 2)
-
-                loop.append([True, shoot, thrust, turn_quantity,
-                            turn_target])
-            loops.append(loop)
-
-        return loops
+        """
+        Decode a binary chromosome into behavior lists.
+        Each behavior is encoded as an 8-bit string:
+        - bit 0: shoot
+        - bit 1: thrust
+        - bits 2-4: turn_quantity
+        - bits 5-7: turn_target
+        """
+        decoded = []
+        
+        for behavior_list in chrome:
+            decoded_behaviors = []
+            for behavior in behavior_list:
+                # Extract components from binary string
+                shoot = bool(int(behavior[0]))
+                thrust = bool(int(behavior[1]))
+                turn_quantity = int(behavior[2:5], 2)  # Convert 3 bits to 0-7
+                turn_target = int(behavior[5:8], 2)    # Convert 3 bits to 0-7
+                
+                decoded_behaviors.append([shoot, thrust, turn_quantity, turn_target])
+            decoded.append(decoded_behaviors)
+        
+        return decoded
 
     @classmethod
-    # A chromosome consists of 16 loops with 8 genes per loop. Each gene is 9 
-    # bits. Jump/Action is dictated by the first bit -> 1 == Jump Gene
     def generate_chromosome(cls):
+        """
+        Generate a chromosome with three behavior lists, each behavior encoded in binary.
+        Structure:
+        - bit 0: shoot (0/1)
+        - bit 1: thrust (0/1)
+        - bits 2-4: turn_quantity (3 bits for 0-7)
+        - bits 5-7: turn_target (3 bits for 0-7)
+        """
         chromosome = []
-        for loop_index in range(16):
-            loop = []
-            for i in range(8): 
-                gene = ""
-                for j in range(9): 
-                    # Jump gene construction
-                    if i == 0 and j == 0:  
-                        gene += "1"
-                    elif j == 0:  
-                        gene += "0"
-                    # Predefined conditional numbers
-                    elif i == 0 and j == 1:  
-                        # 4 bit 0 padding
-                        gene += format(loop_index, '04b')  
-                    elif i == 0 and j > 4:
-                        gene += str(random.randint(0, 1))
-                    elif i > 0:  
-                        gene += str(random.randint(0, 1))
-                loop.append(gene)
-            chromosome.append(loop)
+        
+        # Create 3 behavior lists (dodge, combat, navigate)
+        for _ in range(3):
+            behavior_list = []
+            
+            # Create 8 behaviors per list
+            for _ in range(8):
+                # Generate each component and convert to binary
+                shoot = str(random.randint(0, 1))
+                thrust = str(random.randint(0, 1))
+                turn_quantity = format(random.randint(0, 7), '03b')  # 3 bits for 0-7
+                turn_target = format(random.randint(0, 7), '03b')    # 3 bits for 0-7
+                
+                # Combine into 8-bit binary string
+                behavior = shoot + thrust + turn_quantity + turn_target
+                behavior_list.append(behavior)
+                
+            chromosome.append(behavior_list)
+        
         return chromosome

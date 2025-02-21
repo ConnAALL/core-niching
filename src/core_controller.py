@@ -11,6 +11,7 @@ from Evolver import Evolver
 from ActionGene import ActionGene
 import csv 
 import random 
+from datetime import datetime
 
 load_dotenv()
 DEFAULT_HEADLESS = os.getenv("DEFAULT_HEADLESS") 
@@ -48,7 +49,7 @@ class CoreAgent(ShipData):
         # Hardcoded robot capability
         ai.setPower(8.0) # Power 5-55, amount of thrust
         # Trying 5 instead of 8 for now
-        ai.setTurnSpeed(64.0) # Turn speed 5-64
+        ai.setTurnSpeed(30.0) # Turn speed 5-64
 
         # Initial score
         self.num_kills = 0
@@ -67,10 +68,9 @@ class CoreAgent(ShipData):
         self.prior_death = ["null", "null"]
         self.crossover_completed = False
         self.frames_dead = 0
-
+        self.spawn_set = False
+        
         self.generate_feelers(10)
-        self.ping_server()
-        print("server ping")
 
     def create_csv(self):
         """Create a CSV file in the data directory with the name of the bot."""
@@ -128,7 +128,7 @@ class CoreAgent(ShipData):
             print(f"Failed to log chat message: {e}")
             print(traceback.format_exc())
 
-    def write_soul_data(self, quadrant, bin_chromosome, ftype="a", score=0.0):
+    def write_soul_data(self, ftype="a", score=0.0):
         """Log agent data to CSV.
         
         Parameters:
@@ -143,12 +143,12 @@ class CoreAgent(ShipData):
             # Prepare data row
             data_row = [
                 self.bot_name,          # Bot Name
-                quadrant,               # Spawn Quadrant
+                self.SPAWN_QUAD,        # Spawn Quadrant
                 self.num_kills,         # Kills
                 self.num_self_deaths,   # Self Deaths
                 cause_of_death,         # Cause of Death
-                bin_chromosome,     # Binary Chromosome
-                Evolver.read_chrome(bin_chromosome)     # Decimal Chromosome
+                self.bin_chromosome,     # Binary Chromosome
+                Evolver.read_chrome(self.bin_chromosome)     # Decimal Chromosome
             ]
             
             # Write to CSV file
@@ -158,7 +158,7 @@ class CoreAgent(ShipData):
                 
             print(f"Data logged to CSV for {self.bot_name}")
             print(f"Score: {score}")
-            print(f"Chromosome: {bin_chromosome}")
+            print(f"Chromosome: {self.bin_chromosome}")
             
             # Update local score
             self.spawn_score = self.score
@@ -167,16 +167,7 @@ class CoreAgent(ShipData):
             print(f"Failed to write data to CSV: {e}")
             self.log_error(traceback.format_exc(), 'write_soul_data')
 
-    def was_killed(self):
-        if self.SPAWN_QUAD is None:  # If passed spawn quadrant none
-            print("Agent was passed with SPAWN_QUAD set to None")
-            traceback_str = traceback.format_exc()
-            fs = os.path.join(self.repo_root, 'tracebacks', 'None_somehow_passed_{}.txt'.format(self.chrom_name))
-            with open(fs, "a") as f:
-                f.write(f"Agent {bot_name} with chromosome {self.chrom_name} was passed with SPAWN_QUAD set to None\n")
-                f.write(traceback_str)
-            return 
-        
+    def was_killed(self):        
         agent.update_score()
 
         print(f"Last death is {self.last_death}")
@@ -189,10 +180,9 @@ class CoreAgent(ShipData):
         if "null" in self.last_death:  # If ran into wall, dont crossover, just mutate
             print(f"Agent {self.bot_name} ran into wall (or self destructed some other way)")
             self.num_self_deaths += 1
-            mutate = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death
-            self.write_soul_data(self.SPAWN_QUAD, bin_chromosome=mutate, score=life_score)
-            self.SPAWN_QUAD = None
-            self.bin_chromosome = None  # Erase for new chromosome to load
+            self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death
+            self.write_soul_data(score=life_score)
+            self.spawn_set = False
             return
 
         if ai.selfAlive() == 0 and self.crossover_completed is False:
@@ -217,23 +207,21 @@ class CoreAgent(ShipData):
                 cross_over_child = Evolver.crossover(
                     self.bin_chromosome, new_chromosome)
                 
-                mutated_child = Evolver.mutate(cross_over_child, self.MUT_RATE)
+                self.bin_chromosome = Evolver.mutate(cross_over_child, self.MUT_RATE)
                 
                 # Log the result of crossover and mutation
-                self.write_soul_data(self.SPAWN_QUAD, bin_chromosome=mutated_child, score=life_score)
+                self.write_soul_data(score=life_score)
 
                 # Reset state
-                self.bin_chromosome = None  # Erase for new chromosome to load
-                self.SPAWN_QUAD = None
+                self.spawn_set = False
                 self.crossover_completed = True
 
             except FileNotFoundError:
                 print(f"Could not find CSV file for killer {killer}")
                 # If we can't find the killer's data, just mutate our current chromosome
                 mutated_child = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)
-                self.write_soul_data(self.SPAWN_QUAD, bin_chromosome=mutated_child, score=life_score)
-                self.bin_chromosome = None
-                self.SPAWN_QUAD = None
+                self.write_soul_data(score=life_score)
+                self.spawn_set = False
                 
             except Exception as e:
                 print(f"Error processing killer data: {e}")
@@ -273,7 +261,7 @@ class CoreAgent(ShipData):
         print("X: {}".format(self.agent_data["X"]))
         print("Y: {}".format(self.agent_data["Y"]))
 
-        if agent.SPAWN_QUAD is None and self.agent_data["X"] != -1:
+        if self.agent_data["X"] != -1:
             spawn_x = self.agent_data["X"] - 4500
             spawn_y = self.agent_data["Y"] - 4500
 
@@ -304,12 +292,13 @@ def loop():
 
     try:
         if ai.selfAlive() == 1:
-            if agent.SPAWN_QUAD is None: # Agent is spawning in
+            if agent.spawn_set == False: # Agent is spawning in
                 spawn = agent.set_spawn_quad()            
                 print(f"Agent {bot_name} spawned in quadrant {spawn}")
                 agent.spawn_score = ai.selfScore()
                 agent.dec_chromosome = Evolver.read_chrome(agent.bin_chromosome) # Read chromosome as decimal value
                 agent.SD = False
+                agent.spawn_set = True
 
             #SD is a leftover from Aarons code, idk if I will keep it or not
 
@@ -338,7 +327,35 @@ def loop():
 
                 ActionGene(agent.dec_chromosome, agent)
             else:
-                agent.update_agent_data()
+                # Generate detailed error information
+                error_time = datetime.utcnow().strftime('%Y-%M-%D_%H-%M-%S')
+                error_msg = (
+                    f"ERROR: Missing Chromosome\n"
+                    f"Time: {error_time}\n"
+                    f"Bot: {bot_name}\n"
+                    f"Quadrant: {agent.SPAWN_QUAD}\n"
+                    f"Score: {agent.spawn_score}\n"
+                    f"Frames Dead: {agent.frames_dead}\n"
+                    f"Crossover Completed: {agent.crossover_completed}\n"
+                )
+                
+                # Get the full traceback
+                trace = traceback.format_exc()
+                
+                # Write to error log
+                error_log_path = os.path.join(agent.error_log_path, f'missing_chromosome_error_{error_time}.txt')
+                with open(error_log_path, 'w') as f:
+                    f.write(error_msg)
+                    f.write("\nTraceback:\n")
+                    f.write(trace)
+                    f.write("\nGenerating new chromosome as fallback...\n")
+                
+                print(error_msg)
+                print(f"Full error log written to: {error_log_path}")
+                
+                # Generate new chromosome as fallback
+                agent.bin_chromosome = Evolver.generate_chromosome()
+                
         else: # You died :(
             agent.process_server_feed()
             agent.frames_dead += 1
@@ -358,7 +375,6 @@ def loop():
             f.write(traceback_str)
             f.write(str(agent.bin_chromosome))
             f.write(str(agent.dec_chromosome))
-            f.write(str(agent.current_loop))
         ai.quitAI()
 
 def main():
