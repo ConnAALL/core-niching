@@ -6,3 +6,4 @@ tracebacks/*
 data/*
 back.py
 queue_server.log
+aaron_core_controller.py

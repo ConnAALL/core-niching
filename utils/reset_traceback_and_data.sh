@@ -15,9 +15,6 @@ mkdir "$REPO_ROOT/tracebacks"
 mkdir "$REPO_ROOT/logs"
 
 echo "Wiped data & traceback folder"
-
-echo "Launching Queue Server"
-python3 "$REPO_ROOT/src/QueueServer/queue_server.py"
 sleep 3
 
 #exit
