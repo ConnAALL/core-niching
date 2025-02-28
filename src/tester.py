@@ -55,13 +55,14 @@ class CoreAgent(ShipData):
         self.current_loop_started = False
 
         # Hardcoded robot capability
-        ai.setPower(20.0) # Power 5-55, amount of thrust
-        # Trying 20 instead of 8 for now
+        ai.setPower(55.0) # Power 5-55, amount of thrust
+        # Trying 5 instead of 8 for now
         ai.setTurnSpeed(64.0) # Turn speed 5-64
 
         # Initial score
         self.num_kills = 0
         self.num_self_deaths = 0
+        self.spawn_score = 0
         self.score = 0
         self.movement_timer = -1.0
         self.chromosome_iteration = 0
@@ -75,7 +76,6 @@ class CoreAgent(ShipData):
         self.crossover_completed = False
         self.frames_dead = 0
         self.spawn_set = False
-        self.SD = False
 
         #Misc 
         self.generate_feelers(10)
@@ -84,9 +84,6 @@ class CoreAgent(ShipData):
         self.current_gene_idx = (self.current_gene_idx + 1) \
                                 % self.GENES_PER_LOOP
         return self.current_gene_idx
-    
-    def update_score(self):
-        self.score = ai.selfScore()
 
     def log_error(self, traceback_str, function_name):
         current_time = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
@@ -101,7 +98,7 @@ class CoreAgent(ShipData):
             csv_file_path = os.path.join(self.data_path, f'{self.bot_name}.csv')
             with open(csv_file_path, mode='w', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file)
-                csv_writer.writerow(['Bot Name', 'Spawn Quadrant', 'Kills', 'Self Deaths', 'Score', 'Cause of Death', 'Binary Chromosome', 'Decimal Chromosome'])  # Things we track
+                csv_writer.writerow(['Bot Name', 'Spawn Quadrant', 'Kills', 'Self Deaths', 'Cause of Death', 'Binary Chromosome', 'Decimal Chromosome'])  # Things we track
             print(f"CSV file created successfully at {csv_file_path}")
             return csv_file_path # Give csv_file_path to use later
         except Exception as e:
@@ -127,7 +124,7 @@ class CoreAgent(ShipData):
                 csv_rows = list(csv.reader(csvfile))
                 if len(csv_rows) > 1:  # If we have data rows beyond header
                     last_row = csv_rows[-1]
-                    last_chromosome_str = last_row[6]  # Binary chromosome is in column 6
+                    last_chromosome_str = last_row[5]  # Binary chromosome is in column 5
                     try:
                         last_chromosome = ast.literal_eval(last_chromosome_str)
                         print(f"Found existing chromosome for {self.bot_name}")
@@ -135,6 +132,9 @@ class CoreAgent(ShipData):
                     except (ValueError, SyntaxError):
                         print(f"Could not parse existing chromosome, generating new one")
                         self.bin_chromosome = Evolver.generate_chromosome()
+            
+    def update_score(self):
+        self.score = ai.selfScore()
 
     def process_server_feed(self):
         self.feed_history = []
@@ -164,11 +164,13 @@ class CoreAgent(ShipData):
         elif victim == self.bot_name:
             self.last_death = output
 
-    def write_soul_data(self, ftype="a"):
+    def write_soul_data(self, ftype="a", score=0.0):
         """Log agent data to CSV.
         
         Parameters:
-            ftype: File type 
+            quadrant: The spawn quadrant of the agent
+            ftype: File type (kept for backwards compatibility)
+            score: The score achieved in this life
         """
         try:
             # Determine cause of death
@@ -183,7 +185,6 @@ class CoreAgent(ShipData):
                 self.SPAWN_QUAD,        # Spawn Quadrant
                 self.num_kills,         # Kills
                 self.num_self_deaths,   # Self Deaths
-                self.score,             # Score
                 cause_of_death,         # Cause of Death
                 self.bin_chromosome,     # Binary Chromosome
                 Evolver.read_chrome(self.bin_chromosome)     # Decimal Chromosome
@@ -195,29 +196,32 @@ class CoreAgent(ShipData):
                 csv_writer.writerow(data_row)
                 
             print(f"Data logged to CSV for {self.bot_name}")
-            print(f"Score: {self.score}")
+            print(f"Score: {score}")
             print(f"Chromosome: {self.bin_chromosome}")
-                        
+            
+            # Update local score
+            self.spawn_score = self.score
+            
         except Exception as e:
             print(f"Failed to write data to CSV: {e}")
             self.log_error(traceback.format_exc(), 'write_soul_data')
-    
-    def get_kills(self):
-        compare_score = abs(self.score - ai.selfScore())
-        if compare_score > 9.0:
-            self.num_kills += 1
-        self.score = ai.selfScore()
-        
-    def was_killed(self):        
+
+    def was_killed(self):    
+        self.spawn_set = False    
+        agent.update_score()
         
         print(f"Last death is {self.last_death}")
         print(f"Current Score: {self.score}")
+        print(f"Spawn Score: {self.spawn_score}")
 
+        life_score = self.score - self.spawn_score
+        print(f"Score to log: {life_score}")
         
         if "null" in self.last_death:  # If ran into wall, dont crossover, just mutate
             print(f"Agent {self.bot_name} ran into wall (or self destructed some other way)")
             self.num_self_deaths += 1
-            self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death
+            # Lets just try not mutating for a bit, see what happens
+            #self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death
 
         if ai.selfAlive() == 0 and self.crossover_completed is False:
             killer = self.last_death[0]  # Get killer name
@@ -232,7 +236,7 @@ class CoreAgent(ShipData):
                         csv_rows = list(csv.reader(csvfile))
                         if len(csv_rows) > 1:  # Make sure we have data rows beyond the header
                             last_row = csv_rows[-1]
-                            killer_chromosome_str = last_row[6]  # Binary chromosome is in column 6
+                            killer_chromosome_str = last_row[5]  # Binary chromosome is in column 5
                             killer_chromosome = None
                             try:
                                 killer_chromosome = ast.literal_eval(killer_chromosome_str)
@@ -266,10 +270,9 @@ class CoreAgent(ShipData):
                         f.write(traceback_str)
                     # If we can't find the killer's data, just mutate our current chromosome
                     self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)
-                    self.write_soul_data()
+                    self.write_soul_data(score=life_score)
         
-        self.spawn_set = False
-        self.write_soul_data()
+        self.write_soul_data(score=life_score)
 
     def find_min_wall_angle(self, wall_feelers):
         min_wall = min(wall_feelers)
@@ -313,7 +316,6 @@ class CoreAgent(ShipData):
                 self.SPAWN_QUAD = 3
             else:
                 self.SPAWN_QUAD = 4
-
         return self.SPAWN_QUAD
 
 def loop():
@@ -333,15 +335,15 @@ def loop():
 
     try:
         if ai.selfAlive() == 1:
-            
+
             if agent.spawn_set == False: # Agent is spawning in
                 agent.update_agent_data()
                 agent.SPAWN_QUAD = agent.set_spawn_quad()            
                 print(f"Agent {bot_name} spawned in quadrant {agent.SPAWN_QUAD}")
+                agent.spawn_score = ai.selfScore()
                 agent.dec_chromosome = Evolver.read_chrome(agent.bin_chromosome) # Read chromosome as decimal value
                 agent.current_loop_started = False
                 agent.spawn_set = True
-                agent.SD = False
 
             if agent.movement_timer == -1.0: # Set timer if not set
                 agent.movement_timer = time.time()
@@ -351,15 +353,13 @@ def loop():
             if agent.agent_data["X"] != ai.selfX() or agent.agent_data["Y"] != ai.selfY(): # If agent is moving update time
                 agent.movement_timer = time.time()
 
-            if not agent.SD and time.time() - agent.movement_timer > 5.0: # If agent hasnt moved for 5 seconds, SD to avoid the agent pausing
-                agent.SD = True
+            if time.time() - agent.movement_timer > 5.0 and not agent.SD: # If agent hasnt moved for 5 seconds, SD to avoid the agent pausing
                 ai.selfDestruct()
+                agent.SD = True
                 print("SD'ing")
 
             if agent.bin_chromosome is not None: # If agent has a chromosome, that means its back alive
                 
-                agent.get_kills() # Update agent kills
-
                 if not agent.current_loop_started:
                     agent.current_loop = agent.dec_chromosome[0]
                     agent.current_loop_started = True
@@ -385,7 +385,6 @@ def loop():
                         agent.increment_gene_idx()
 
                 gene = agent.current_loop[agent.current_gene_idx]
-                ActionGene(gene, agent)
                 agent.increment_gene_idx()
             else:
                 # Generate detailed error information
@@ -395,6 +394,7 @@ def loop():
                     f"Time: {current_time}\n"
                     f"Bot: {bot_name}\n"
                     f"Quadrant: {agent.SPAWN_QUAD}\n"
+                    f"Score: {agent.spawn_score}\n"
                     f"Frames Dead: {agent.frames_dead}\n"
                     f"Crossover Completed: {agent.crossover_completed}\n"
                 )
