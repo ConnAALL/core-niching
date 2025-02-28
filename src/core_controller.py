@@ -12,6 +12,7 @@ from ActionGene import ActionGene
 import csv 
 import random 
 from datetime import datetime
+import ast
 
 load_dotenv()
 DEFAULT_HEADLESS = os.getenv("DEFAULT_HEADLESS") 
@@ -40,7 +41,6 @@ class CoreAgent(ShipData):
         self.initialized = False # Chromosome not yet generated
         self.MUT_RATE = 300
         self.GENES_PER_LOOP = 8
-        self.chrom_name = ""
         self.SPAWN_QUAD = None
         self.bot_name = bot_name
         self.bin_chromosome = Evolver.generate_chromosome() # Generate inital chromosome
@@ -49,7 +49,7 @@ class CoreAgent(ShipData):
         # Hardcoded robot capability
         ai.setPower(8.0) # Power 5-55, amount of thrust
         # Trying 5 instead of 8 for now
-        ai.setTurnSpeed(30.0) # Turn speed 5-64
+        ai.setTurnSpeed(64.0) # Turn speed 5-64
 
         # Initial score
         self.num_kills = 0
@@ -69,7 +69,7 @@ class CoreAgent(ShipData):
         self.crossover_completed = False
         self.frames_dead = 0
         self.spawn_set = False
-        
+
         self.generate_feelers(10)
 
     def create_csv(self):
@@ -115,18 +115,6 @@ class CoreAgent(ShipData):
             self.last_kill = output
         elif victim == self.bot_name:
             self.last_death = output
-
-    def log_chat_message(self, message): # Log each system message, will probs delete later testing something
-        try:
-            log_dir = os.path.join(self.repo_root, 'logs')
-            os.makedirs(log_dir, exist_ok=True)
-            log_file_path = os.path.join(log_dir, f'chat_log_{self.chrom_name}.txt')
-            with open(log_file_path, 'a') as log_file:
-                log_time = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
-                log_file.write(f"{log_time} - {message}\n")
-        except Exception as e:
-            print(f"Failed to log chat message: {e}")
-            print(traceback.format_exc())
 
     def write_soul_data(self, ftype="a", score=0.0):
         """Log agent data to CSV.
@@ -182,54 +170,54 @@ class CoreAgent(ShipData):
             self.num_self_deaths += 1
             self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death
             self.write_soul_data(score=life_score)
-            self.spawn_set = False
-            return
 
         if ai.selfAlive() == 0 and self.crossover_completed is False:
             killer = self.last_death[0]  # Get killer name
-            killer_csv = os.path.join(self.data_path, f'CA_{killer}.csv')  # Construct killer's CSV path
+            killer_csv = os.path.join(self.data_path, f'{killer}.csv')  # Construct killer's CSV path
             
-            print(f"{killer} killed {self.chrom_name}")
+            if killer != 'null':
+                print(f"{killer} killed {self.bot_name}")
+                try:
+                    # Read the killer's CSV file to get their latest chromosome
+                    with open(killer_csv, 'r', newline='') as csvfile:
+                        # Read all rows to get the last one
+                        csv_rows = list(csv.reader(csvfile))
+                        if len(csv_rows) > 1:  # Make sure we have data rows beyond the header
+                            last_row = csv_rows[-1]
+                            new_chromosome_str = last_row[5]  # Binary chromosome is in column 5
+                            try:
+                                new_chromosome = ast.literal_eval(new_chromosome_str)
+                                print(f"New chromosome for killer {killer}: {new_chromosome}")
+                            except (ValueError, SyntaxError) as parse_error:
+                                print(f"Error parsing chromosome data for killer {killer}: {parse_error}")
+                                return
+                        else:
+                            print(f"No chromosome data found for killer {killer}")
+                            return
+                except Exception as e:
+                    print(f"Error processing killer data: {e}")
+                    traceback_str = traceback.format_exc()
+                    current_time = datetime.datetime.now(datetime.UTC)
+                    fs = os.path.join(self.repo_root, 'tracebacks', f'killer_data_error_{self.bot_name}.txt')
+                    with open(fs, "a") as f:
+                        f.write(f"Error processing killer {killer} data for agent {self.bot_name} at {current_time}\n")
+                        f.write(traceback_str)
 
-            try:
-                # Read the killer's CSV file to get their latest chromosome
-                with open(killer_csv, 'r', newline='') as csvfile:
-                    # Read all rows to get the last one
-                    csv_rows = list(csv.reader(csvfile))
-                    if len(csv_rows) > 1:  # Make sure we have data rows beyond the header
-                        last_row = csv_rows[-1]
-                        new_chromosome = last_row[5]  # Binary chromosome is in column 5
-                    else:
-                        print(f"No chromosome data found for killer {killer}")
-                        return
-
-                # If we got here, we have the killer's chromosome
-                cross_over_child = Evolver.crossover(
-                    self.bin_chromosome, new_chromosome)
-                
-                self.bin_chromosome = Evolver.mutate(cross_over_child, self.MUT_RATE)
-                
-                # Log the result of crossover and mutation
-                self.write_soul_data(score=life_score)
-
-                # Reset state
-                self.spawn_set = False
-                self.crossover_completed = True
-
-            except FileNotFoundError:
-                print(f"Could not find CSV file for killer {killer}")
-                # If we can't find the killer's data, just mutate our current chromosome
-                mutated_child = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)
-                self.write_soul_data(score=life_score)
-                self.spawn_set = False
-                
-            except Exception as e:
-                print(f"Error processing killer data: {e}")
-                traceback_str = traceback.format_exc()
-                fs = os.path.join(self.repo_root, 'tracebacks', f'killer_data_error_{self.chrom_name}.txt')
-                with open(fs, "a") as f:
-                    f.write(f"Error processing killer {killer} data for agent {self.bot_name}\n")
-                    f.write(traceback_str)
+                except FileNotFoundError:
+                    print(f"Could not find CSV file for killer {killer}")
+                    # If we can't find the killer's data, just mutate our current chromosome
+                    mutated_child = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)
+                    self.write_soul_data(score=life_score)
+                    self.spawn_set = False
+                    
+                except Exception as e:
+                    print(f"Error processing killer data: {e}")
+                    traceback_str = traceback.format_exc()
+                    current_time = datetime.datetime.now(datetime.UTC)
+                    fs = os.path.join(self.repo_root, 'tracebacks', f'killer_data_error_{self.bot_name}.txt')
+                    with open(fs, "a") as f:
+                        f.write(f"Error processing killer {killer} data for agent {self.bot_name} at {current_time}\n")
+                        f.write(traceback_str)
 
     def find_min_wall_angle(self, wall_feelers):
         min_wall = min(wall_feelers)
@@ -281,7 +269,7 @@ def loop():
     global bot_name
     global team 
 
-    if team != -1:
+    if team > 0:
         message = (f"/team {team}")
         ai.talk(message)
         print(f"Agent {bot_name} joined team {team}.")
@@ -292,6 +280,7 @@ def loop():
 
     try:
         if ai.selfAlive() == 1:
+
             if agent.spawn_set == False: # Agent is spawning in
                 spawn = agent.set_spawn_quad()            
                 print(f"Agent {bot_name} spawned in quadrant {spawn}")
@@ -328,7 +317,7 @@ def loop():
                 ActionGene(agent.dec_chromosome, agent)
             else:
                 # Generate detailed error information
-                error_time = datetime.utcnow().strftime('%Y-%M-%D_%H-%M-%S')
+                error_time = datetime.datetime.now(datetime.UTC)
                 error_msg = (
                     f"ERROR: Missing Chromosome\n"
                     f"Time: {error_time}\n"
@@ -361,7 +350,8 @@ def loop():
             agent.frames_dead += 1
             agent.agent_data["X"] = -1
             agent.agent_data["Y"] = -1
-            if agent.frames_dead >= 5: 
+
+            if agent.frames_dead >= 5:
                 agent.was_killed()
                 agent.frames_dead = sys.maxsize * -1 # Agent is dead, so do not crossover until otherwise
 
@@ -370,7 +360,7 @@ def loop():
         print(str(e))
         traceback.print_exc()
         traceback_str = traceback.format_exc()
-        fs = os.path.join(agent.repo_root, 'tracebacks', 'AI_loop_exception_{}.txt'.format(agent.chrom_name))
+        fs = os.path.join(agent.repo_root, 'tracebacks', 'AI_loop_exception_{}.txt'.format(agent.bot_name))
         with open(fs, "w") as f:
             f.write(traceback_str)
             f.write(str(agent.bin_chromosome))
@@ -398,13 +388,12 @@ def main():
         else:
             team = -1
         
-        print(team)
-
         if HEADLESS not in answers: # If we did not argue something that sounds like we don't want it to run in headless, run in headless
             ai.headlessMode()
         
-        ai.start(loop, ["-name", bot_name, "-join", SERVER_IP])
-
+        #ai.start(loop, ["-name", bot_name, "-join", SERVER_IP])
+        ai.start(loop, ["-name", bot_name, "-join", "localhost"])
+	
     except Exception as e:
         print("Exception in main")
         print(str(e))

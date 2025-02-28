@@ -2,12 +2,12 @@
 # Get the directory of the current script
 SCRIPT_DIR=$(dirname "$0")
 # Set the number of instances you want to run
-num_instances=15;
+num_instances=1;
 
 # Loop from 1 to num_instances
 for ((i = 1; i <= num_instances; i++)); do
     echo "Running instance $i"
-    python3 "$SCRIPT_DIR/../core_controller.py" A_$RANDOM "headless_true"&
+    python3 "$SCRIPT_DIR/../core_controller.py" A_$RANDOM "headless_false" 1 "0" 1&
     sleep 0.75;
     # Note that headless MUST be false if agents have limited lives
 done

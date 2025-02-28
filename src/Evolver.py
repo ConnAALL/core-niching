@@ -1,111 +1,69 @@
 import random
-import os
-import json
-
 
 class Evolver():
     @classmethod
     def crossover(cls, chromosome_1, chromosome_2):
+        child = []
         chances = random.randint(0, 1)
-        child = None
 
-        # Single Point Crossover: Occurs strictly between genes
-        if chances == 1: 
-            # Split between jump gene and following action genes
+        # Single Point Crossover: between behavior lists
+        if chances == 1:
+            # Choose a random splice point between the behavior lists
             splice_point = random.randint(1, len(chromosome_1))
-            chrome1_X = chromosome_1[0:splice_point]
-            chrome1_Y = chromosome_1[splice_point:]
-            chrome2_X = chromosome_2[0:splice_point]
-            chrome2_Y = chromosome_2[splice_point:]
-
-            child1 = chrome1_X + chrome2_Y
-            child2 = chrome2_X + chrome1_Y
-
+            child = chromosome_1[:splice_point] + chromosome_2[splice_point:]
+            
+            # Random chance to use the alternative crossover result
             if random.randint(0, 1) == 1:
-                child = child1
-            else:
-                child = child2
+                child = chromosome_2[:splice_point] + chromosome_1[splice_point:]
 
-        # Uniform crossover
-        elif chances == 0:  
-            new_chromosome = [] 
-            for loop_index in range(len(chromosome_1)):
-                # Loop containing 16 genes
-                loop = [] 
-
-                for gene_index in range(len(chromosome_1[loop_index])):
-                    # A 9 bit representation of a jump or action gene
-                    gene = ""  
-
-                    # Start at one to not flip jump and actions 
-                    for bit_index in range(0, 
-                                           len(chromosome_1[loop_index]
-                                               [gene_index])): 
-                        bit = ""
-                        if 0 == random.randint(0, 1):
-                            bit = \
-                                chromosome_1[loop_index][gene_index][bit_index]
+        # Uniform crossover: mix individual behaviors/bits
+        elif chances == 0:
+            for b_list_index in range(len(chromosome_1)):
+                new_behavior_list = []
+                
+                for behavior_index in range(len(chromosome_1[b_list_index])):
+                    # For each behavior, choose bits from either parent
+                    new_behavior = ""
+                    
+                    for bit_index in range(len(chromosome_1[b_list_index][behavior_index])):
+                        if random.randint(0, 1) == 0:
+                            new_behavior += chromosome_1[b_list_index][behavior_index][bit_index]
                         else:
-                            bit = \
-                                chromosome_2[loop_index][gene_index][bit_index]
-
-                        if bit_index == 0:
-                            bit = \
-                                chromosome_1[loop_index][gene_index][bit_index]
-
-                        gene += bit
-                    loop.append(gene)
-                new_chromosome.append(loop)
-
-            child = new_chromosome
-
+                            new_behavior += chromosome_2[b_list_index][behavior_index][bit_index]
+                            
+                    new_behavior_list.append(new_behavior)
+                
+                child.append(new_behavior_list)
         else:
             print("Crossover error")
-
-        for gene_index in range(len(child)):
-            if cls.is_jump_gene(child[gene_index]):
-                new_jump_gene = chromosome_1[0:5] + child[gene_index][5:]
-                child[gene_index] = new_jump_gene
+            
         return child
 
     @classmethod
     def mutate(cls, chromosome, MUT_RATE):
-        new_chromosome = [] 
-        for loop_index in range(len(chromosome)):
-            loop = [] 
-
-            for gene_index in range(len(chromosome[loop_index])):
-                gene = chromosome[loop_index][gene_index]
-                new_gene = ""  
-                if cls.is_jump_gene(gene): 
-                    new_gene += gene[0:5]
-
-                    # In a jump gene, the only dynamic bits are the loop number 
-                    for bit in gene[5:]:  
-                        if 0 == random.randint(0, MUT_RATE):
-                            bit = '1' if bit == '0' else '0'
-                        new_gene += bit
-
-                # Action Gene
-                else:  
-                    new_gene += gene[0] 
-                    # Action gene has dynamic bits after bit 0.         
-                    for bit in gene[1:]: 
-                        if 0 == random.randint(0, MUT_RATE):
-                            bit = '1' if bit == '0' else '0'
-                        new_gene += bit
-
-                loop.append(new_gene)
-            new_chromosome.append(loop)
-
+        new_chromosome = []
+        
+        for b_list_index in range(len(chromosome)):
+            new_behavior_list = []
+            
+            for behavior_index in range(len(chromosome[b_list_index])):
+                behavior = chromosome[b_list_index][behavior_index]
+                new_behavior = ""
+                
+                for bit_index in range(len(behavior)):
+                    bit = behavior[bit_index]
+                    
+                    # Chance to mutate each bit based on mutation rate
+                    if random.randint(0, MUT_RATE) == 0:
+                        bit = '1' if bit == '0' else '0'
+                        
+                    new_behavior += bit
+                    
+                new_behavior_list.append(new_behavior)
+                
+            new_chromosome.append(new_behavior_list)
+            
         return new_chromosome
-
-    @classmethod
-    def is_jump_gene(cls, gene):
-        if type(gene[0]) == bool:
-            return gene[0] is False
-        elif type(gene[0]) == str:
-            return gene[0] == "1"
 
     @classmethod
     def read_chrome(cls, chrome):

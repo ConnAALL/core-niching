@@ -1,10 +1,16 @@
 High Prority:
-0 - Run the test im running overnight to see if there is any crashes, if not LFG I did it
-1 - Xpilots switchbase 1.0 option actually works, but it doesnt work in xpilots_mod, I probs have to ask Jim to help fix this
+0 - Fix the core_teams map
+1 - Bring back either CGA implementation or expert system where we evolve weights
 2 - Make it so that when a new server is started, make a new folder to store the data from this new run in
 3 - Have all agents frozen until all agents have spawned in, then SD all agents before starting the test
 4 - Have everything logged into a master csv every 60 seconds for a cool graph at the end
-
+5 - A lazy brute force way to fix agent timeouts would be to have launch_team_agents called every time a disconnection happens,
+which I think would have be detected in the same window the server is run in so who knows how that would work out. Also
+I guess if your doing it that way might as well just make it launch the exact agent that got timed out.
 Low Prority:
 
 I think this might be an issue:
+1 - I think agents are worse at aiming now but that could be my imagination
+
+Bugfixes:
+1 - Agents still crashing, might just fix itself when I redo controller
