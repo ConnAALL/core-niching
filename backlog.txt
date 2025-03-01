@@ -1,21 +1,23 @@
 High Prority:
-1 - Make it so that when a new server is started, make a new folder to store the data from this new run in
-2 - Have all agents frozen until all agents have spawned in, then SD all agents before starting the test
+1 - Set speed limit to limit wall crashers, when tracking and heading are similiar and speed is high, don't thrust, you can thrust otherwise to try and save yourself from debris knockback
+# check the direction you are heading is where your heading is, so if heading != tracking, its going off course, if going off course, its okay to speed up to save yourself from pushback, if heading and tracking are the same, speed limit needed (dont thrust if above a certain speed)
+2 - Make it so that when a new server is started, make a new folder to store the data from this new run in
 3 - Have everything logged into a master csv every 60 seconds for a cool graph at the end
 4 - A lazy brute force way to fix agent timeouts would be to have launch_team_agents called every time a disconnection happens,
 which I think would have be detected in the same window the server is run in so who knows how that would work out. Also
-I guess if your doing it that way might as well just make it launch the exact agent that got timed out.
+I guess if your doing it that way might as well just make it launch the exact agent that got timed out. (disconnection issue seems fixed for now, so maybe not needed)
+
 Low Prority:
 
 I think this might be an issue:
-1 - I think agents are worse at aiming now but that could be my imagination
+
 
 Maybe: 
 1 - Switch to expert system with evolving weights
 2 - If I don't switch to expert system I should probably make the agents less likely to run into a wall,
 like they have a behavior that saves them now it just barely works
-3 - Maybe add some sort of fitness function for crossover reasons
 
 Bugfixes:
-1 - Agents still crashing, might just fix itself when I redo controller
+1 - Agents still crashing (seems fixed maybe)
 2 - WHY ARE AGENTS PAUSING NOW WHAT DID I DO
+

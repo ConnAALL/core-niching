@@ -55,6 +55,8 @@ class Evolver():
                     loop.append(gene)
                 new_chromosome.append(loop)
 
+            child = new_chromosome
+        
         else:
             print("Crossover error")
 

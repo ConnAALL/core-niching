@@ -306,9 +306,9 @@ class CoreAgent(ShipData):
             spawn_y = self.agent_data["Y"] - 4500
 
             if spawn_x >= 0 and spawn_y >= 0:
-                self.SPAWN_QUAD = 1
-            elif spawn_x < 0 and spawn_y >= 0:
                 self.SPAWN_QUAD = 2
+            elif spawn_x < 0 and spawn_y >= 0:
+                self.SPAWN_QUAD = 1
             elif spawn_x < 0 and spawn_y < 0:
                 self.SPAWN_QUAD = 3
             else:
@@ -320,13 +320,6 @@ def loop():
     # to test kills each frame this is called check if score is + or - more than 9 pts
     global agent
     global bot_name
-    global team 
-
-    if team > 0:
-        message = (f"/team {team}")
-        ai.talk(message)
-        print(f"Agent {bot_name} joined team {team}.")
-        team = -1
     
     if agent is None:
         agent = CoreAgent(bot_name)
@@ -351,9 +344,9 @@ def loop():
             if agent.agent_data["X"] != ai.selfX() or agent.agent_data["Y"] != ai.selfY(): # If agent is moving update time
                 agent.movement_timer = time.time()
 
-            if not agent.SD and time.time() - agent.movement_timer > 5.0: # If agent hasnt moved for 5 seconds, SD to avoid the agent pausing
-                agent.SD = True
+            if not agent.SD and time.time() - agent.movement_timer > 30.0: # If agent hasnt moved for 30 seconds, SD to avoid the agent pausing
                 ai.selfDestruct()
+                agent.SD = True
                 print("SD'ing")
 
             if agent.bin_chromosome is not None: # If agent has a chromosome, that means its back alive
@@ -403,7 +396,7 @@ def loop():
                 trace = traceback.format_exc()
                 
                 # Write to error log
-                error_log_path = os.path.join(agent.error_log_path, f'missing_chromosome_error_{error_time}.txt')
+                error_log_path = os.path.join(agent.error_log_path, f'missing_chromosome_error_{current_time}.txt')
                 with open(error_log_path, 'w') as f:
                     f.write(error_msg)
                     f.write("\nTraceback:\n")
@@ -462,9 +455,11 @@ def main():
         if HEADLESS not in answers: # If we did not argue something that sounds like we don't want it to run in headless, run in headless
             ai.headlessMode()
         
-        #ai.start(loop, ["-name", bot_name, "-join", SERVER_IP])
-        ai.start(loop, ["-name", bot_name, "-join", "localhost"])
-	
+        if team != -1:
+            ai.start(loop, ["-name", bot_name, "-join", SERVER_IP, "-team", str(team)])
+        else:
+            ai.start(loop, ["-name", bot_name, "-join", SERVER_IP])
+
     except Exception as e:
         print("Exception in main")
         print(str(e))
