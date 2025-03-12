@@ -8,6 +8,7 @@ import time
 from dotenv import load_dotenv
 from ShipData import ShipData
 from Evolver import Evolver
+from ActionGene import ActionGene
 import csv 
 import random 
 from datetime import datetime, timezone
@@ -54,9 +55,9 @@ class CoreAgent(ShipData):
         self.current_loop_started = False
 
         # Hardcoded robot capability
-        # So for power, I ran the system for 24 hours at 5 power, 8 power
+        # So for power, I ran the system for around 24 hours at 5 power, 8 power, 10 power and 20 power, it seems like the smaller powers have a better self death to kill ratio, but this is the unmodifed action gene, and I think I ran the lower power systems for longer so they had more a chance to evolve
+        # anyway, 5 did the best but 8 followed pretty closely behind, and 8 seems like the minimum power that you need to be to recover when blown off course by another agent exploding, so thats why its 8 for now
         ai.setPower(8.0) # Power 5-55, amount of thrust
-        # Trying 20 instead of 8 for now
         ai.setTurnSpeed(64.0) # Turn speed 5-64
 
         # Initial score
@@ -120,7 +121,8 @@ class CoreAgent(ShipData):
         if not os.path.exists(csv_path):
             print(f"First run for {self.bot_name} - creating new CSV and chromosome")
             self.create_csv()
-            return Evolver.generate_chromosome()
+            #return Evolver.generate_chromosome()
+            return (['100001001', '011101010', '011011001', '011100101', '000100011', '000111000', '000100101', '000010111'], ['100010101', '001001001', '011001111', '001000111', '011001110', '001001010', '010110100', '011001001'], ['100101100', '011100110', '010011001', '010001000', '000110111', '010101010', '000000100', '001010010'], ['100111010', '000110111', '010110111', '000011011', '000001011', '001110101', '000110011', '000000111'], ['101000110', '000101101', '000101101', '000100010', '010111100', '001111010', '011101010', '010111111'], ['101010111', '001110100', '001100011', '010010110', '000110001', '011111001', '010001001', '011110010'], ['101101110', '001111011', '001001000', '011110000', '001101101', '011101010', '000011101', '010001010'], ['101111011', '001010010', '000111100', '001111100', '010000111', '011110110', '001010100', '010101000'], ['110000000', '010010100', '000100100', '010000101', '001011000', '010111111', '010011101', '001110100'], ['110010100', '001001011', '001110101', '011001111', '001000101', '000111010', '010011110', '000000100'], ['110101001', '011101001', '001110110', '000101011', '000011001', '010010000', '010101011', '001011100'], ['110110000', '000010101', '010100111', '011111001', '011101111', '010001000', '000111000', '001100000'], ['111000001', '011111101', '001101100', '010111111', '001111001', '010000001', '010011101', '000101000'], ['111010111', '001100000', '010110011', '000111111', '001001110', '010110010', '000000101', '011011110'], ['111101111', '001010101', '001101101', '011101101', '000011010', '010010000', '001001111', '000011101'], ['111111110', '001001110', '010000010', '000011001', '000000100', '010011011', '000110110', '000000001'])
 
         # Check if CSV exists and has data
         if os.path.exists(csv_path):
@@ -216,10 +218,10 @@ class CoreAgent(ShipData):
         print(f"Current Score: {self.score}")
 
         
-        if "null" in self.last_death:  # If ran into wall, dont crossover, just mutate
+        if "null" in self.last_death:  # If ran into wall, dont crossover
             print(f"Agent {self.bot_name} ran into wall (or self destructed some other way)")
             self.num_self_deaths += 1
-            self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death
+            #self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death, turned off for now because original paper doesnt have it
 
         if ai.selfAlive() == 0 and self.crossover_completed is False:
             killer = self.last_death[0]  # Get killer name
@@ -345,10 +347,11 @@ def loop():
             if agent.agent_data["X"] != ai.selfX() or agent.agent_data["Y"] != ai.selfY(): # If agent is moving update time
                 agent.movement_timer = time.time()
 
-            if not agent.SD and time.time() - agent.movement_timer > 45.0: # If agent hasnt moved for 45 seconds, SD to get to a better area, SD is an input so we also get an input to avoid getting kicked
+            if not agent.SD and time.time() - agent.movement_timer > 10.0: # If agent hasnt moved for 10 seconds, SD to get to a better area, SD is an input so we also get an input to avoid getting kicked
                 ai.selfDestruct()
                 agent.SD = True
                 print("SD'ing")
+                # I think I disabled the pause feature but I'm not gonna remove the code until im sure of that
 
             if agent.bin_chromosome is not None: # If agent has a chromosome, that means its back alive
                 
@@ -379,9 +382,10 @@ def loop():
                         agent.increment_gene_idx()
 
                 gene = agent.current_loop[agent.current_gene_idx]
+                ActionGene(gene, agent)
                 agent.increment_gene_idx()
             else:
-                # Generate detailed error information
+                # Error information
                 current_time = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
                 error_msg = (
                     f"ERROR: Missing Chromosome\n"
@@ -411,10 +415,10 @@ def loop():
                 
         else: # You died :(
             agent.process_server_feed()
+            agent.movement_timer = -1.0 # For SD
             agent.frames_dead += 1
             agent.agent_data["X"] = -1
             agent.agent_data["Y"] = -1
-            agent.movement_timer = -1.0 # For SD
 
             if agent.frames_dead >= 5:
                 agent.was_killed()

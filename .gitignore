@@ -7,3 +7,4 @@ data/*
 back.py
 queue_server.log
 aaron_core_controller.py
+old_ActionGene.py

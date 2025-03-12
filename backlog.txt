@@ -1,12 +1,13 @@
 High Prority:
+0 - see if you can get a good core agent going with the current action gene, just like hard coded 
 1 - Set speed limit to limit wall crashers, when tracking and heading are similiar and speed is high, don't thrust, you can thrust otherwise to try and save yourself from debris knockback
 # check the direction you are heading is where your heading is, so if heading != tracking, its going off course, if going off course, its okay to speed up to save yourself from pushback, if heading and tracking are the same, speed limit needed (dont thrust if above a certain speed)
 2 - Make it so that when a new server is started, make a new folder to store the data from this new run in
 3 - Have everything logged into a master csv every 60 seconds for a cool graph at the end
-4 - A lazy brute force way to fix agent timeouts would be to have launch_team_agents called every time a disconnection happens,
-which I think would have be detected in the same window the server is run in so who knows how that would work out. Also
-I guess if your doing it that way might as well just make it launch the exact agent that got timed out. (disconnection issue seems fixed for now, so maybe not needed)
-
+4 - Need to fix storage, the linux systems here dont have a lot of storage, so I need to start saving stuff to temp and then taking the data and putting it on my usbs before they get wiped. Also I can def write less stuff to the CSVS.
+5 - before project goes public, give tools and instructions for people to compile xpilots mod on their own device
+6 - to help agent evolve, consider adding age of adolecence (see core journal paper)
+7 - a good way to test agents fitness is in the last paragraph in 6.0 in the core journal paper
 Low Prority:
 
 I think this might be an issue:

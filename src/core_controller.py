@@ -55,8 +55,9 @@ class CoreAgent(ShipData):
         self.current_loop_started = False
 
         # Hardcoded robot capability
-        ai.setPower(20.0) # Power 5-55, amount of thrust
-        # Trying 20 instead of 8 for now
+        # So for power, I ran the system for around 24 hours at 5 power, 8 power, 10 power and 20 power, it seems like the smaller powers have a better self death to kill ratio, but this is the unmodifed action gene, and I think I ran the lower power systems for longer so they had more a chance to evolve
+        # anyway, 5 did the best but 8 followed pretty closely behind, and 8 seems like the minimum power that you need to be to recover when blown off course by another agent exploding, so thats why its 8 for now
+        ai.setPower(8.0) # Power 5-55, amount of thrust
         ai.setTurnSpeed(64.0) # Turn speed 5-64
 
         # Initial score
@@ -77,8 +78,9 @@ class CoreAgent(ShipData):
         self.spawn_set = False
         self.SD = False
 
-        #Misc 
-        self.generate_feelers(10)
+        # Misc 
+        step = 10
+        self.generate_feelers(step) # Generate feelers at every stepth degree from 0-359 degrees
 
     def increment_gene_idx(self):
         self.current_gene_idx = (self.current_gene_idx + 1) \
@@ -203,6 +205,7 @@ class CoreAgent(ShipData):
             self.log_error(traceback.format_exc(), 'write_soul_data')
     
     def get_kills(self):
+        # If we got plus or minus 9 pts, it means we got a kill, minus is fine because team killing counts
         compare_score = abs(self.score - ai.selfScore())
         if compare_score > 9.0:
             self.num_kills += 1
@@ -217,7 +220,7 @@ class CoreAgent(ShipData):
         if "null" in self.last_death:  # If ran into wall, dont crossover, just mutate
             print(f"Agent {self.bot_name} ran into wall (or self destructed some other way)")
             self.num_self_deaths += 1
-            self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death
+            #self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death, turned off for now because original paper doesnt have it
 
         if ai.selfAlive() == 0 and self.crossover_completed is False:
             killer = self.last_death[0]  # Get killer name
@@ -317,7 +320,6 @@ class CoreAgent(ShipData):
         return self.SPAWN_QUAD
 
 def loop():
-    # to test kills each frame this is called check if score is + or - more than 9 pts
     global agent
     global bot_name
     
@@ -339,15 +341,16 @@ def loop():
             if agent.movement_timer == -1.0: # Set timer if not set
                 agent.movement_timer = time.time()
                 agent.SD = False
-                print("Initial SD timer set")
+                #print("Initial SD timer set")
 
             if agent.agent_data["X"] != ai.selfX() or agent.agent_data["Y"] != ai.selfY(): # If agent is moving update time
                 agent.movement_timer = time.time()
 
-            if not agent.SD and time.time() - agent.movement_timer > 30.0: # If agent hasnt moved for 30 seconds, SD to avoid the agent pausing
+            if not agent.SD and time.time() - agent.movement_timer > 10.0: # If agent hasnt moved for 10 seconds, SD to get to a better area, SD is an input so we also get an input to avoid getting kicked
                 ai.selfDestruct()
                 agent.SD = True
                 print("SD'ing")
+                # I think I disabled the pause feature but I'm not gonna remove the code until im sure of that
 
             if agent.bin_chromosome is not None: # If agent has a chromosome, that means its back alive
                 
@@ -381,7 +384,7 @@ def loop():
                 ActionGene(gene, agent)
                 agent.increment_gene_idx()
             else:
-                # Generate detailed error information
+                # Error information
                 current_time = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
                 error_msg = (
                     f"ERROR: Missing Chromosome\n"
@@ -411,6 +414,7 @@ def loop():
                 
         else: # You died :(
             agent.process_server_feed()
+            agent.movement_timer = -1.0 # For SD
             agent.frames_dead += 1
             agent.agent_data["X"] = -1
             agent.agent_data["Y"] = -1

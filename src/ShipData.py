@@ -5,14 +5,19 @@ from Engine import libpyAI as ai
 
 class ShipData:
     def __init__(self):
+
+        # Feelers params are dist and angle, dist is the distance of the line thats drawn to "feel" for things like 
+        # walls, angle is the angle the feeler is drawn at in degrees, so 360 feelers from angle 0-359, all with a dist of 500, 
+        # will cover a full 360 degree radius around the ship for a distance of 500 units
+
         self.agent_data = {
-            "heading": float(ai.selfHeadingDeg()),
-            "tracking": float(ai.selfTrackingDeg()),
-            "X": -1,
-            "Y": -1,
-            "speed": float(ai.selfSpeed()),
-            "head_feelers": [],
-            "track_feelers": []
+            "heading": float(ai.selfHeadingDeg()), # Direction the ship is pointed
+            "tracking": float(ai.selfTrackingDeg()), # The actual direction the ship is going
+            "X": -1, # Xpos
+            "Y": -1, #Ypos
+            "speed": float(ai.selfSpeed()), # Speed calculated by sqrt(pow(vel.x,2)+pow(vel.y,2))
+            "head_feelers": [], # Feelers to determine heading
+            "track_feelers": [] # Feelers to determine tracking
         }
         
         self.enemy_data = {
@@ -40,6 +45,7 @@ class ShipData:
         self.agent_data["tracking"] = float(ai.selfTrackingDeg())
 
     def generate_feelers(self, step):
+        # Generate feelers from angle 0 to 359 every stepth degree, range of 500
         print("Generating feelers")
         for angle in range(0, 360, step):
             self.agent_data["track_feelers"].append(

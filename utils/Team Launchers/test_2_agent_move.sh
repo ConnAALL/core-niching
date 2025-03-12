@@ -3,7 +3,7 @@
 SCRIPT_DIR=$(dirname "$0")
 REPO_DIR=$(dirname "$(dirname "$SCRIPT_DIR")")
 # Set the number of instances you want to run
-num_instances_per_team=30;
+
 
 # Launch one agent
 for ((j = 1; j <= 2; j++)); do	
