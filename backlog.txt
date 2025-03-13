@@ -1,7 +1,8 @@
 High Prority:
 0 - see if you can get a good core agent going with the current action gene, just like hard coded 
-1 - Set speed limit to limit wall crashers, when tracking and heading are similiar and speed is high, don't thrust, you can thrust otherwise to try and save yourself from debris knockback
+1 - Add a gene to loop about when tracking and heading are not similiar, that means you are off track, when tracking and heading are similiar and speed is high, don't thrust, you can thrust otherwise to try and save yourself from debris knockback
 # check the direction you are heading is where your heading is, so if heading != tracking, its going off course, if going off course, its okay to speed up to save yourself from pushback, if heading and tracking are the same, speed limit needed (dont thrust if above a certain speed)
+1.1 - Might need to hard code it so that it doesnt choose to move if its above a certain speed, like add a speed limit to that jump gene conditional.
 2 - Make it so that when a new server is started, make a new folder to store the data from this new run in
 3 - Have everything logged into a master csv every 60 seconds for a cool graph at the end
 4 - Need to fix storage, the linux systems here dont have a lot of storage, so I need to start saving stuff to temp and then taking the data and putting it on my usbs before they get wiped. Also I can def write less stuff to the CSVS.
@@ -14,11 +15,7 @@ I think this might be an issue:
 
 
 Maybe: 
-1 - Switch to expert system with evolving weights
-2 - If I don't switch to expert system I should probably make the agents less likely to run into a wall,
-like they have a behavior that saves them now it just barely works
+1 - I dont think check conditional works the way its supposed to but im too tired to figure that out rn
+
 
 Bugfixes:
-1 - Agents still crashing (seems fixed maybe)
-2 - WHY ARE AGENTS PAUSING NOW WHAT DID I DO
-

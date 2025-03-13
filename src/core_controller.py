@@ -47,7 +47,7 @@ class CoreAgent(ShipData):
         self.initialized = False # Chromosome not yet generated
         self.MUT_RATE = 300
         self.GENES_PER_LOOP = 8
-        self.SPAWN_QUAD = None
+        self.SPAWN_QUAD = None # Spawn quad isnt really all that important anymore other than some of the things in the loop being based off it being set or not, can probably be removed but idk its cool to have
         self.bot_name = bot_name
         self.current_loop = None
         self.current_loop_idx = 0
@@ -287,17 +287,62 @@ class CoreAgent(ShipData):
         return angle if angle < 180 else angle - 360
 
     def check_conditional(self, conditional_index):
+        """
+        Evaluates environmental conditions based on a conditional index value.
+        
+        Littearly a production system of sorts that jumps to a certain gene in 
+        the chromosome to handle behaviors if certain conditions are met. As of right now
+        its just the same action gene each time. Might be good to write specialized action
+        genes for certain conditions. 
+        
+        The conditions cover a variety of game state situations:
+        - Ship speed ranges (too slow, too fast)
+        - Enemy proximity and direction quadrant
+        - Wall distances (collision avoidance)
+        - Bullet proximity (evasion)
+        - Absence of enemies or movement
+        
+        Parameters:
+            conditional_index: Integer index (0-15) specifying which condition to check
+            
+        Returns:
+            Boolean result of the evaluated condition (True/False)
+        """
+        # Get the minimum distance to a wall from all feelers
         min_wall_dist = min(self.agent_data["head_feelers"])
-        conditional_list = [self.agent_data["speed"] < 6, self.agent_data["speed"] > 10,
-                            self.enemy_data["distance"] < 50, self.agent_data["head_feelers"][0] < 100,
-                            self.enemy_data["distance"] < 200 and self.enemy_data["direction"] == 1,
-                            self.enemy_data["distance"] < 150 and self.enemy_data["direction"] == 2,
-                            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 3,
-                            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 4,
-                            min_wall_dist < 75, min_wall_dist < 200, min_wall_dist > 300,
-                            self.bullet_data["distance"] < 100, self.bullet_data["distance"] < 200,
-                            self.bullet_data["distance"] < 50, self.enemy_data["distance"] == -1,
-                            self.agent_data["speed"] == 0]
+        
+        # List of all possible conditions that can be checked
+        conditional_list = [
+            # Speed-based conditions
+            self.agent_data["speed"] < 6,                  # 0: Speed too low (< 6)
+            self.agent_data["speed"] > 10,                 # 1: Speed too high (> 10)
+            
+            # Enemy-based conditions
+            self.enemy_data["distance"] < 50,              # 2: Enemy very close (< 50 units)
+            self.agent_data["head_feelers"][0] < 100,      # 3: Wall directly ahead (< 100 units)
+            
+            # Enemy in specific directions with distance thresholds
+            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 1,  # 4: Enemy in NE quadrant, close
+            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 2,  # 5: Enemy in NW quadrant, close
+            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 3,  # 6: Enemy in SW quadrant, close
+            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 4,  # 7: Enemy in SE quadrant, close
+            
+            # Wall distance thresholds
+            min_wall_dist < 75,                            # 8: Wall very close (< 75 units)
+            min_wall_dist < 200,                           # 9: Wall moderately close (< 200 units)
+            min_wall_dist > 300,                           # 10: No walls nearby (> 300 units)
+            
+            # Bullet distance thresholds
+            self.bullet_data["distance"] < 100,            # 11: Bullet close (< 100 units)
+            self.bullet_data["distance"] < 200,            # 12: Bullet moderately close (< 200 units)
+            self.bullet_data["distance"] < 50,             # 13: Bullet very close (< 50 units)
+            
+            # Special conditions
+            self.enemy_data["distance"] == -1,             # 14: No enemy detected
+            self.agent_data["speed"] == 0                  # 15: Ship is not moving
+        ]
+        
+        # Return the result of the condition at the specified index
         return conditional_list[conditional_index]
 
     def set_spawn_quad(self):
@@ -350,38 +395,51 @@ def loop():
                 ai.selfDestruct()
                 agent.SD = True
                 print("SD'ing")
-                # I think I disabled the pause feature but I'm not gonna remove the code until im sure of that
 
-            if agent.bin_chromosome is not None: # If agent has a chromosome, that means its back alive
+            if agent.bin_chromosome is not None: # If agent has a chromosome, that means its back alive, main loop
                 
-                agent.get_kills() # Update agent kills
-
+                agent.get_kills() # Update agent kills count f
+                
+                # Initialize the first loop if not already started
                 if not agent.current_loop_started:
-                    agent.current_loop = agent.dec_chromosome[0]
+                    agent.current_loop = agent.dec_chromosome[0]  # Start with the first loop in the chromosome
                     agent.current_loop_started = True
-
-                agent.frames_dead = 0
-
-                agent.update_agent_data()
-                agent.update_enemy_data()
-                agent.update_bullet_data()
-                agent.update_score()
-
-                agent.crossover_completed = False # Reset crossover flag
+                
+                agent.frames_dead = 0  # Reset frames dead counter since agent is alive
+                
+                # Update all sensor data from the environment
+                agent.update_agent_data()    # Update positional data, speed, heading
+                agent.update_enemy_data()    # Update enemy detection and tracking
+                agent.update_bullet_data()   # Update bullet detection and tracking
+                agent.update_score()         # Update current score from game
+                
+                agent.crossover_completed = False  # Reset the crossover flag for next death event
+                
+                # Get the current gene to execute from the current loop
                 gene = agent.current_loop[agent.current_gene_idx]
-
+                
+                # Process jump genes (control flow instructions)
                 if Evolver.is_jump_gene(gene):
+                    # Check if the condition specified by this jump gene is true
                     if agent.check_conditional(gene[1]):
-                        agent.current_loop_idx = gene[2]
+                        # Condition is true, jump to the specified loop
+                        agent.current_loop_idx = gene[2]  # Set the new loop index
                         agent.current_loop = \
-                            agent.dec_chromosome[agent.current_loop_idx]
-                        agent.current_gene_idx = 0
-                        return
+                            agent.dec_chromosome[agent.current_loop_idx]  # Get the loop from the decoded chromosome
+                        agent.current_gene_idx = 0  # Start executing from the first gene in the new loop
+                        return  # Exit the current execution cycle
                     else:
+                        # Condition is false, move to the next gene in sequence
                         agent.increment_gene_idx()
-
+                
+                # Process action genes (ship control instructions)
+                # Get the current gene again (could be different if we've moved to the next one after a failed jump)
                 gene = agent.current_loop[agent.current_gene_idx]
+                
+                # Create and execute an ActionGene to control the ship based on the gene data
                 ActionGene(gene, agent)
+                
+                # Move to the next gene for the next execution cycle
                 agent.increment_gene_idx()
             else:
                 # Error information
