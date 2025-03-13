@@ -103,7 +103,7 @@ class CoreAgent(ShipData):
             csv_file_path = os.path.join(self.data_path, f'{self.bot_name}.csv')
             with open(csv_file_path, mode='w', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file)
-                csv_writer.writerow(['Bot Name', 'Spawn Quadrant', 'Kills', 'Self Deaths', 'Score', 'Cause of Death', 'Binary Chromosome', 'Decimal Chromosome'])  # Things we track
+                csv_writer.writerow(['Kills', 'Self Deaths', 'Cause of Death', 'Binary Chromosome'])  # Things we track
             print(f"CSV file created successfully at {csv_file_path}")
             return csv_file_path # Give csv_file_path to use later
         except Exception as e:
@@ -181,14 +181,10 @@ class CoreAgent(ShipData):
             
             # Prepare data row
             data_row = [
-                self.bot_name,          # Bot Name
-                self.SPAWN_QUAD,        # Spawn Quadrant
                 self.num_kills,         # Kills
                 self.num_self_deaths,   # Self Deaths
-                self.score,             # Score
                 cause_of_death,         # Cause of Death
-                self.bin_chromosome,     # Binary Chromosome
-                Evolver.read_chrome(self.bin_chromosome)     # Decimal Chromosome
+                self.bin_chromosome     # Binary Chromosome
             ]
             
             # Write to CSV file
@@ -235,7 +231,7 @@ class CoreAgent(ShipData):
                         csv_rows = list(csv.reader(csvfile))
                         if len(csv_rows) > 1:  # Make sure we have data rows beyond the header
                             last_row = csv_rows[-1]
-                            killer_chromosome_str = last_row[6]  # Binary chromosome is in column 6
+                            killer_chromosome_str = last_row[3]  # Binary chromosome is in column 4
                             killer_chromosome = None
                             try:
                                 killer_chromosome = ast.literal_eval(killer_chromosome_str)
@@ -419,8 +415,8 @@ def loop():
                 gene = agent.current_loop[agent.current_gene_idx]
                 
                 # Process jump genes (control flow instructions)
-                if Evolver.is_jump_gene(gene):
-                    # Check if the condition specified by this jump gene is true
+                if Evolver.is_jump_gene(gene): # If we have reached a jump gene
+                    # Check if the condition specified by this jump gene is true, if it isnt, move on to the next one in the list
                     if agent.check_conditional(gene[1]):
                         # Condition is true, jump to the specified loop
                         agent.current_loop_idx = gene[2]  # Set the new loop index
@@ -431,7 +427,8 @@ def loop():
                     else:
                         # Condition is false, move to the next gene in sequence
                         agent.increment_gene_idx()
-                
+
+                # Now we have found our conditional
                 # Process action genes (ship control instructions)
                 # Get the current gene again (could be different if we've moved to the next one after a failed jump)
                 gene = agent.current_loop[agent.current_gene_idx]

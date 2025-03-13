@@ -9,13 +9,14 @@ High Prority:
 5 - before project goes public, give tools and instructions for people to compile xpilots mod on their own device
 6 - to help agent evolve, consider adding age of adolecence (see core journal paper)
 7 - a good way to test agents fitness is in the last paragraph in 6.0 in the core journal paper
+
 Low Prority:
 
 I think this might be an issue:
 
 
 Maybe: 
-1 - I dont think check conditional works the way its supposed to but im too tired to figure that out rn
 
 
 Bugfixes:
+
