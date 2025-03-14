@@ -396,7 +396,7 @@ def loop():
             
             if agent.time_born == -1.0:
                 agent.time_born = time.time() # For age of adolescence and regeneration pause
-                print("Time born set")
+                #print("Time born set")
 
             if agent.agent_data["X"] != ai.selfX() or agent.agent_data["Y"] != ai.selfY(): # If agent is moving update time
                 agent.movement_timer = time.time()
@@ -411,7 +411,7 @@ def loop():
 
             if agent.regeneration_pause and time.time() - agent.time_born >= agent.pause_penalty: # If pause penalty is up, we are good
                 agent.regeneration_pause = False 
-                print("Regen Penalty Over")
+                #print("Regen Penalty Over")
             
             if agent.regeneration_pause: # We gotta wait for the pause penalty to be done
                 return

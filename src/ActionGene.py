@@ -1,5 +1,5 @@
 from Engine import libpyAI as ai
-
+import random 
 class ActionGene:
     def __init__(self, gene, agent):
         """
@@ -20,7 +20,7 @@ class ActionGene:
         self.agent = agent                                # Reference to the agent executing the action
         self.shoot = gene[1]                              # Boolean - whether to fire weapon this tick
         self.thrust = 1 if gene[2] else 0                 # Convert boolean to int (1 = thrust on, 0 = off)
-        self.turn_quantity = int((gene[3] + 0) * 5)       # Scaling factor for turn amount
+        self.turn_quantity = int((gene[3] + 0) * 15)     # Scaling factor for turn amount
         self.turn_target = gene[4]                        # Target to turn towards (0-7 encoded values)
 
         # Execute the actions immediately upon gene creation
@@ -34,10 +34,12 @@ class ActionGene:
         - 0-1: Turn toward or away from the nearest wall
         - 2-3: Turn toward or away from the farthest wall
         - 4-5: Turn toward or away from the nearest enemy
-        - 6-7: Turn toward or away from the nearest bullet/shot
+        - 6: Turn toward or away from the nearest bullet
+        - 7: Don't turn
         
         The turn_quantity parameter controls how sharp the turn is.
         """
+
         # Use match-case statement to select turning behavior
         match self.turn_target:
             # Case 0: Turn toward the nearest wall
@@ -87,22 +89,19 @@ class ActionGene:
                         ai.turn(-1 * self.turn_quantity)  # Turn clockwise
                     else:
                         ai.turn(self.turn_quantity)       # Turn counter-clockwise
-                        
-            # Case 6: Turn toward the nearest bullet
+
+            # Case 6: Turn away from the nearest bullet
             case 6:
-                if self.agent.bullet_data["X"] != -1:  # Check if bullet is detected
-                    if self.agent.bullet_data["angle_to_shot"] < 0:
-                        ai.turn(-1 * self.turn_quantity)  # Turn clockwise
-                    elif self.agent.bullet_data["angle_to_shot"] > 0:
-                        ai.turn(self.turn_quantity)       # Turn counter-clockwise
-                        
-            # Case 7: Turn away from the nearest bullet
-            case 7:
                 if self.agent.bullet_data["X"] != -1:  # Check if bullet is detected
                     if self.agent.bullet_data["angle_to_shot"] > 0:
                         ai.turn(-1 * self.turn_quantity)  # Turn clockwise
                     elif self.agent.bullet_data["angle_to_shot"] < 0:
                         ai.turn(self.turn_quantity)       # Turn counter-clockwise
+
+            # Case 7: Don't turn
+            case 7:
+                return 
+                        
 
     def act(self):
         """

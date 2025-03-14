@@ -296,7 +296,10 @@ class CoreAgent(ShipData):
         self.write_soul_data()
 
     def find_min_wall_angle(self, wall_feelers):
+        #for wall in wall_feelers:
+        #    print(wall)
         min_wall = min(wall_feelers)
+        #print(min_wall)
         min_index = wall_feelers.index(min_wall)
         angle = int(10 * min_index)
         return angle if angle < 180 else angle - 360
