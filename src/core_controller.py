@@ -47,7 +47,7 @@ class CoreAgent(ShipData):
         self.initialized = False # Chromosome not yet generated
         self.MUT_RATE = 300
         self.GENES_PER_LOOP = 8
-        self.SPAWN_QUAD = None # Spawn quad isnt really all that important anymore other than some of the things in the loop being based off it being set or not, can probably be removed but idk its cool to have
+        self.SPAWN_QUAD = None # Spawn quad isnt really all that important anymore, but its still cool to have so why not just keep it
         self.bot_name = bot_name
         self.current_loop = None
         self.current_loop_idx = 0
@@ -77,6 +77,11 @@ class CoreAgent(ShipData):
         self.frames_dead = 0
         self.spawn_set = False
         self.SD = False
+        self.time_born = -1 # Time born, for age of adolescence and regeneration pause
+        self.adult = False # Is agent adult?
+        self.age_of_adolescence = 0 # This many seconds old to be an adult and not mutate on self death
+        self.regeneration_pause = False # Should I pause on self death?
+        self.pause_penalty = 2 # Pause for this many seconds after a self death
 
         # Misc 
         step = 10
@@ -129,7 +134,7 @@ class CoreAgent(ShipData):
                 csv_rows = list(csv.reader(csvfile))
                 if len(csv_rows) > 1:  # If we have data rows beyond header
                     last_row = csv_rows[-1]
-                    last_chromosome_str = last_row[6]  # Binary chromosome is in column 6
+                    last_chromosome_str = last_row[3]  # Binary chromosome is in column 4
                     try:
                         last_chromosome = ast.literal_eval(last_chromosome_str)
                         print(f"Found existing chromosome for {self.bot_name}")
@@ -212,11 +217,13 @@ class CoreAgent(ShipData):
         print(f"Last death is {self.last_death}")
         print(f"Current Score: {self.score}")
 
-        
         if "null" in self.last_death:  # If ran into wall, dont crossover, just mutate
             print(f"Agent {self.bot_name} ran into wall (or self destructed some other way)")
             self.num_self_deaths += 1
-            #self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death, turned off for now because original paper doesnt have it
+            agent.regeneration_pause = True # Regeneration pause penalty if self death
+
+            if not self.adult:
+                self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death, only happens if agent didnt live to adulthood
 
         if ai.selfAlive() == 0 and self.crossover_completed is False:
             killer = self.last_death[0]  # Get killer name
@@ -370,6 +377,8 @@ def loop():
     try:
         if ai.selfAlive() == 1:
             
+            #print(f"Agent {bot_name} speed is {agent.agent_data['speed']}.")
+            
             if agent.spawn_set == False: # Agent is spawning in
                 agent.update_agent_data()
                 agent.SPAWN_QUAD = agent.set_spawn_quad()            
@@ -378,24 +387,38 @@ def loop():
                 agent.current_loop_started = False
                 agent.spawn_set = True
                 agent.SD = False
+                agent.adult = False # For age of adolescence
 
-            if agent.movement_timer == -1.0: # Set timer if not set
+            if agent.movement_timer == -1.0: # Set timer if not set, don't start until regeneration pause is done
                 agent.movement_timer = time.time()
                 agent.SD = False
                 #print("Initial SD timer set")
+            
+            if agent.time_born == -1.0:
+                agent.time_born = time.time() # For age of adolescence and regeneration pause
+                print("Time born set")
 
             if agent.agent_data["X"] != ai.selfX() or agent.agent_data["Y"] != ai.selfY(): # If agent is moving update time
                 agent.movement_timer = time.time()
 
-            if not agent.SD and time.time() - agent.movement_timer > 10.0: # If agent hasnt moved for 10 seconds, SD to get to a better area, SD is an input so we also get an input to avoid getting kicked
+            if not agent.SD and time.time() - agent.movement_timer > 10.0 + agent.pause_penalty: # If agent hasnt moved for 10 seconds, SD to get to a better area, SD is an input so we also get an input to avoid getting kicked, factor pause penalty into account, if pause penalty is something insane (like over 5), higher chance of getting kicked
                 ai.selfDestruct()
                 agent.SD = True
                 print("SD'ing")
 
-            if agent.bin_chromosome is not None: # If agent has a chromosome, that means its back alive, main loop
-                
-                agent.get_kills() # Update agent kills count f
-                
+            if not agent.adult and time.time() - agent.time_born >= agent.age_of_adolescence: # Becomes adult when a certain amount of seconds old, non adults mutate on self death, this is to hopefully naturally weed out agents that smash into walls
+                agent.adult = True
+
+            if agent.regeneration_pause and time.time() - agent.time_born >= agent.pause_penalty: # If pause penalty is up, we are good
+                agent.regeneration_pause = False 
+                print("Regen Penalty Over")
+            
+            if agent.regeneration_pause: # We gotta wait for the pause penalty to be done
+                return
+            elif agent.bin_chromosome is not None: # If agent has a chromosome, that means its back alive, main loop, we wait for regeneration pause to be over
+
+                agent.get_kills() # Update agent kills count
+
                 # Initialize the first loop if not already started
                 if not agent.current_loop_started:
                     agent.current_loop = agent.dec_chromosome[0]  # Start with the first loop in the chromosome
@@ -468,11 +491,13 @@ def loop():
                 agent.bin_chromosome = Evolver.generate_chromosome()
                 
         else: # You died :(
+            ai.thrust(0) # Make sure the thrust key is turned off
             agent.process_server_feed()
             agent.movement_timer = -1.0 # For SD
             agent.frames_dead += 1
             agent.agent_data["X"] = -1
             agent.agent_data["Y"] = -1
+            agent.time_born = -1.0
 
             if agent.frames_dead >= 5:
                 agent.was_killed()
@@ -543,4 +568,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -47,7 +47,7 @@ class CoreAgent(ShipData):
         self.initialized = False # Chromosome not yet generated
         self.MUT_RATE = 300
         self.GENES_PER_LOOP = 8
-        self.SPAWN_QUAD = None
+        self.SPAWN_QUAD = None # Spawn quad isnt really all that important anymore, but its still cool to have so why not just keep it
         self.bot_name = bot_name
         self.current_loop = None
         self.current_loop_idx = 0
@@ -77,6 +77,11 @@ class CoreAgent(ShipData):
         self.frames_dead = 0
         self.spawn_set = False
         self.SD = False
+        self.time_born = -1 # Time born, for age of adolescence and regeneration pause
+        self.adult = False # Is agent adult?
+        self.age_of_adolescence = 0 # This many seconds old to be an adult and not mutate on self death
+        self.regeneration_pause = False # Should I pause on self death?
+        self.pause_penalty = 0 # Pause for this many seconds after a self death
 
         # Misc 
         step = 10
@@ -103,7 +108,7 @@ class CoreAgent(ShipData):
             csv_file_path = os.path.join(self.data_path, f'{self.bot_name}.csv')
             with open(csv_file_path, mode='w', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file)
-                csv_writer.writerow(['Bot Name', 'Spawn Quadrant', 'Kills', 'Self Deaths', 'Score', 'Cause of Death', 'Binary Chromosome', 'Decimal Chromosome'])  # Things we track
+                csv_writer.writerow(['Kills', 'Self Deaths', 'Cause of Death', 'Binary Chromosome'])  # Things we track
             print(f"CSV file created successfully at {csv_file_path}")
             return csv_file_path # Give csv_file_path to use later
         except Exception as e:
@@ -147,7 +152,7 @@ class CoreAgent(ShipData):
                 csv_rows = list(csv.reader(csvfile))
                 if len(csv_rows) > 1:  # If we have data rows beyond header
                     last_row = csv_rows[-1]
-                    last_chromosome_str = last_row[6]  # Binary chromosome is in column 6
+                    last_chromosome_str = last_row[3]  # Binary chromosome is in column 4
                     try:
                         last_chromosome = ast.literal_eval(last_chromosome_str)
                         print(f"Found existing chromosome for {self.bot_name}")
@@ -199,14 +204,10 @@ class CoreAgent(ShipData):
             
             # Prepare data row
             data_row = [
-                self.bot_name,          # Bot Name
-                self.SPAWN_QUAD,        # Spawn Quadrant
                 self.num_kills,         # Kills
                 self.num_self_deaths,   # Self Deaths
-                self.score,             # Score
                 cause_of_death,         # Cause of Death
-                self.bin_chromosome,     # Binary Chromosome
-                Evolver.read_chrome(self.bin_chromosome)     # Decimal Chromosome
+                self.bin_chromosome     # Binary Chromosome
             ]
             
             # Write to CSV file
@@ -234,11 +235,13 @@ class CoreAgent(ShipData):
         print(f"Last death is {self.last_death}")
         print(f"Current Score: {self.score}")
 
-        
-        if "null" in self.last_death:  # If ran into wall, dont crossover
+        if "null" in self.last_death:  # If ran into wall, dont crossover, just mutate
             print(f"Agent {self.bot_name} ran into wall (or self destructed some other way)")
             self.num_self_deaths += 1
-            #self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death, turned off for now because original paper doesnt have it
+            agent.regeneration_pause = True # Regeneration pause penalty if self death
+
+            if not self.adult:
+                self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death, only happens if agent didnt live to adulthood
 
         if ai.selfAlive() == 0 and self.crossover_completed is False:
             killer = self.last_death[0]  # Get killer name
@@ -253,7 +256,7 @@ class CoreAgent(ShipData):
                         csv_rows = list(csv.reader(csvfile))
                         if len(csv_rows) > 1:  # Make sure we have data rows beyond the header
                             last_row = csv_rows[-1]
-                            killer_chromosome_str = last_row[6]  # Binary chromosome is in column 6
+                            killer_chromosome_str = last_row[3]  # Binary chromosome is in column 4
                             killer_chromosome = None
                             try:
                                 killer_chromosome = ast.literal_eval(killer_chromosome_str)
@@ -305,17 +308,62 @@ class CoreAgent(ShipData):
         return angle if angle < 180 else angle - 360
 
     def check_conditional(self, conditional_index):
+        """
+        Evaluates environmental conditions based on a conditional index value.
+        
+        Littearly a production system of sorts that jumps to a certain gene in 
+        the chromosome to handle behaviors if certain conditions are met. As of right now
+        its just the same action gene each time. Might be good to write specialized action
+        genes for certain conditions. 
+        
+        The conditions cover a variety of game state situations:
+        - Ship speed ranges (too slow, too fast)
+        - Enemy proximity and direction quadrant
+        - Wall distances (collision avoidance)
+        - Bullet proximity (evasion)
+        - Absence of enemies or movement
+        
+        Parameters:
+            conditional_index: Integer index (0-15) specifying which condition to check
+            
+        Returns:
+            Boolean result of the evaluated condition (True/False)
+        """
+        # Get the minimum distance to a wall from all feelers
         min_wall_dist = min(self.agent_data["head_feelers"])
-        conditional_list = [self.agent_data["speed"] < 6, self.agent_data["speed"] > 10,
-                            self.enemy_data["distance"] < 50, self.agent_data["head_feelers"][0] < 100,
-                            self.enemy_data["distance"] < 200 and self.enemy_data["direction"] == 1,
-                            self.enemy_data["distance"] < 150 and self.enemy_data["direction"] == 2,
-                            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 3,
-                            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 4,
-                            min_wall_dist < 75, min_wall_dist < 200, min_wall_dist > 300,
-                            self.bullet_data["distance"] < 100, self.bullet_data["distance"] < 200,
-                            self.bullet_data["distance"] < 50, self.enemy_data["distance"] == -1,
-                            self.agent_data["speed"] == 0]
+        
+        # List of all possible conditions that can be checked
+        conditional_list = [
+            # Speed-based conditions
+            self.agent_data["speed"] < 6,                  # 0: Speed too low (< 6)
+            self.agent_data["speed"] > 10,                 # 1: Speed too high (> 10)
+            
+            # Enemy-based conditions
+            self.enemy_data["distance"] < 50,              # 2: Enemy very close (< 50 units)
+            self.agent_data["head_feelers"][0] < 100,      # 3: Wall directly ahead (< 100 units)
+            
+            # Enemy in specific directions with distance thresholds
+            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 1,  # 4: Enemy in NE quadrant, close
+            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 2,  # 5: Enemy in NW quadrant, close
+            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 3,  # 6: Enemy in SW quadrant, close
+            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 4,  # 7: Enemy in SE quadrant, close
+            
+            # Wall distance thresholds
+            min_wall_dist < 75,                            # 8: Wall very close (< 75 units)
+            min_wall_dist < 200,                           # 9: Wall moderately close (< 200 units)
+            min_wall_dist > 300,                           # 10: No walls nearby (> 300 units)
+            
+            # Bullet distance thresholds
+            self.bullet_data["distance"] < 100,            # 11: Bullet close (< 100 units)
+            self.bullet_data["distance"] < 200,            # 12: Bullet moderately close (< 200 units)
+            self.bullet_data["distance"] < 50,             # 13: Bullet very close (< 50 units)
+            
+            # Special conditions
+            self.enemy_data["distance"] == -1,             # 14: No enemy detected
+            self.agent_data["speed"] == 0                  # 15: Ship is not moving
+        ]
+        
+        # Return the result of the condition at the specified index
         return conditional_list[conditional_index]
 
     def set_spawn_quad(self):
@@ -346,7 +394,8 @@ def loop():
 
     try:
         if ai.selfAlive() == 1:
-            
+
+            #print(f"Agent {bot_name} speed is {agent.agent_data['speed']}.")
             if agent.spawn_set == False: # Agent is spawning in
                 agent.update_agent_data()
                 agent.SPAWN_QUAD = agent.set_spawn_quad()            
@@ -355,51 +404,80 @@ def loop():
                 agent.current_loop_started = False
                 agent.spawn_set = True
                 agent.SD = False
+                agent.adult = False # For age of adolescence
 
-            if agent.movement_timer == -1.0: # Set timer if not set
+            if agent.movement_timer == -1.0: # Set timer if not set, don't start until regeneration pause is done
                 agent.movement_timer = time.time()
                 agent.SD = False
                 #print("Initial SD timer set")
+            
+            if agent.time_born == -1.0:
+                agent.time_born = time.time() # For age of adolescence and regeneration pause
+                print("Time born set")
 
             if agent.agent_data["X"] != ai.selfX() or agent.agent_data["Y"] != ai.selfY(): # If agent is moving update time
                 agent.movement_timer = time.time()
 
-            if not agent.SD and time.time() - agent.movement_timer > 10.0: # If agent hasnt moved for 10 seconds, SD to get to a better area, SD is an input so we also get an input to avoid getting kicked
+            if not agent.SD and time.time() - agent.movement_timer > 10.0 + agent.pause_penalty: # If agent hasnt moved for 10 seconds, SD to get to a better area, SD is an input so we also get an input to avoid getting kicked, factor pause penalty into account, if pause penalty is something insane (like over 5), higher chance of getting kicked
                 ai.selfDestruct()
                 agent.SD = True
                 print("SD'ing")
-                # I think I disabled the pause feature but I'm not gonna remove the code until im sure of that
 
-            if agent.bin_chromosome is not None: # If agent has a chromosome, that means its back alive
-                
-                agent.get_kills() # Update agent kills
+            if not agent.adult and time.time() - agent.time_born >= agent.age_of_adolescence: # Becomes adult when a certain amount of seconds old, non adults mutate on self death, this is to hopefully naturally weed out agents that smash into walls
+                agent.adult = True
 
+            if agent.regeneration_pause and time.time() - agent.time_born >= agent.pause_penalty: # If pause penalty is up, we are good
+                agent.regeneration_pause = False 
+                print("Regen Penalty Over")
+            
+            if agent.regeneration_pause: # We gotta wait for the pause penalty to be done
+                return
+            elif agent.bin_chromosome is not None: # If agent has a chromosome, that means its back alive, main loop, we wait for regeneration pause to be over
+
+                agent.get_kills() # Update agent kills count
+
+                # Initialize the first loop if not already started
                 if not agent.current_loop_started:
-                    agent.current_loop = agent.dec_chromosome[0]
+                    agent.current_loop = agent.dec_chromosome[0]  # Start with the first loop in the chromosome
                     agent.current_loop_started = True
-
-                agent.frames_dead = 0
-
-                agent.update_agent_data()
-                agent.update_enemy_data()
-                agent.update_bullet_data()
-                agent.update_score()
-
-                agent.crossover_completed = False # Reset crossover flag
+                
+                agent.frames_dead = 0  # Reset frames dead counter since agent is alive
+                
+                # Update all sensor data from the environment
+                agent.update_agent_data()    # Update positional data, speed, heading
+                agent.update_enemy_data()    # Update enemy detection and tracking
+                agent.update_bullet_data()   # Update bullet detection and tracking
+                agent.update_score()         # Update current score from game
+                
+                agent.crossover_completed = False  # Reset the crossover flag for next death event
+                
+                # Get the current gene to execute from the current loop
                 gene = agent.current_loop[agent.current_gene_idx]
-
-                if Evolver.is_jump_gene(gene):
+                
+                # Process jump genes (control flow instructions)
+                if Evolver.is_jump_gene(gene): # If we have reached a jump gene
+                    # Check if the condition specified by this jump gene is true, if it isnt, move on to the next one in the list
                     if agent.check_conditional(gene[1]):
-                        agent.current_loop_idx = gene[2]
+                        # Condition is true, jump to the specified loop
+                        agent.current_loop_idx = gene[2]  # Set the new loop index
                         agent.current_loop = \
-                            agent.dec_chromosome[agent.current_loop_idx]
-                        agent.current_gene_idx = 0
-                        return
+                            agent.dec_chromosome[agent.current_loop_idx]  # Get the loop from the decoded chromosome
+                        agent.current_gene_idx = 0  # Start executing from the first gene in the new loop
+                        return  # Exit the current execution cycle
                     else:
+                        # Condition is false, move to the next gene in sequence
                         agent.increment_gene_idx()
 
+                # Now we have found our conditional
+                # Process action genes (ship control instructions)
+                # Get the current gene again (could be different if we've moved to the next one after a failed jump)
                 gene = agent.current_loop[agent.current_gene_idx]
-                ActionGene(gene, agent)
+                
+                # Create and execute an ActionGene to control the ship based on the gene data
+                if not agent.regeneration_pause:
+                    ActionGene(gene, agent)
+                
+                # Move to the next gene for the next execution cycle
                 agent.increment_gene_idx()
             else:
                 # Error information
@@ -431,11 +509,13 @@ def loop():
                 agent.bin_chromosome = Evolver.generate_chromosome()
                 
         else: # You died :(
+            ai.thrust(0) # Make sure the thrust key is turned off
             agent.process_server_feed()
             agent.movement_timer = -1.0 # For SD
             agent.frames_dead += 1
             agent.agent_data["X"] = -1
             agent.agent_data["Y"] = -1
+            agent.time_born = -1.0
 
             if agent.frames_dead >= 5:
                 agent.was_killed()
@@ -506,4 +586,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
