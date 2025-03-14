@@ -334,7 +334,12 @@ class CoreAgent(ShipData):
         """
         # Get the minimum distance to a wall from all feelers
         min_wall_dist = min(self.agent_data["head_feelers"])
-        
+        print(f"heading {ai.selfHeadingDeg()}")
+        print(f"tracking {ai.selfTrackingDeg()}")
+        print(f"closest wall is {min_wall_dist} away")
+        print(f"Closest bullet is {self.bullet_data['distance']} away")
+        print(f"Speed is {self.agent_data['speed']}")
+
         # List of all possible conditions that can be checked
         conditional_list = [
             # Speed-based conditions

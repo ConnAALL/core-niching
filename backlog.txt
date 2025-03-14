@@ -20,3 +20,5 @@ Maybe:
 
 Bugfixes:
 
+Notes: 
+1 - Original xpilot paper had firerepeatrate at 5, this one has it at 20 so 4 times as slow, I think thats better but just remember its changed

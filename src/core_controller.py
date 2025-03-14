@@ -311,38 +311,44 @@ class CoreAgent(ShipData):
         Returns:
             Boolean result of the evaluated condition (True/False)
         """
+        # del min_wall_dist > 300,  (never happened)
+        # del             self.bullet_data["distance"] < 100,  self.bullet_data["distance"] < 200, (redundant)            
+        # add self.bullet_data["distance"] < 150 (replacement)
+        # add heading and tracking diff by more than 50
+        # add heading and tracking diff by more than 100
         # Get the minimum distance to a wall from all feelers
         min_wall_dist = min(self.agent_data["head_feelers"])
+        tracking = ai.selfTrackingDeg()
+        heading = ai.selfHeadingDeg()
+        direction_diff = abs(tracking - heading) 
+        #print(f"heading {ai.selfHeadingDeg()}")
+        #print(f"tracking {ai.selfTrackingDeg()}")
         
         # List of all possible conditions that can be checked
         conditional_list = [
             # Speed-based conditions
-            self.agent_data["speed"] < 6,                  # 0: Speed too low (< 6)
-            self.agent_data["speed"] > 10,                 # 1: Speed too high (> 10)
+            self.agent_data["speed"] < 5,                  # 0: Speed too low (< 5)
+            self.agent_data["speed"] > 12,                 # 1: Speed too high (> 12)
             
             # Enemy-based conditions
-            self.enemy_data["distance"] < 50,              # 2: Enemy very close (< 50 units)
-            self.agent_data["head_feelers"][0] < 100,      # 3: Wall directly ahead (< 100 units)
-            
-            # Enemy in specific directions with distance thresholds
-            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 1,  # 4: Enemy in NE quadrant, close
-            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 2,  # 5: Enemy in NW quadrant, close
-            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 3,  # 6: Enemy in SW quadrant, close
-            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 4,  # 7: Enemy in SE quadrant, close
+            self.enemy_data["distance"] < 100,             # 2: Enemy approaching (< 100 units)
+            self.enemy_data["distance"] < 250,             # 3: Enemy far but still visable (< 250 units)
             
             # Wall distance thresholds
-            min_wall_dist < 75,                            # 8: Wall very close (< 75 units)
-            min_wall_dist < 200,                           # 9: Wall moderately close (< 200 units)
-            min_wall_dist > 300,                           # 10: No walls nearby (> 300 units)
+            min_wall_dist < 75,                            # 4: Wall very close (< 75 units)
+            min_wall_dist < 200,                           # 5: Wall sort of close (< 200 units)
+            
+            # Difference in tracking and heading thresholds 
+            direction_diff > 50,                           # 6: Ship is a bit off course (< 50 degrees)
+            direction_diff > 100,                          # 7: Ship is very off course (< 100 degrees)
             
             # Bullet distance thresholds
-            self.bullet_data["distance"] < 100,            # 11: Bullet close (< 100 units)
-            self.bullet_data["distance"] < 200,            # 12: Bullet moderately close (< 200 units)
-            self.bullet_data["distance"] < 50,             # 13: Bullet very close (< 50 units)
+            self.bullet_data["distance"] < 150,             # 8: Bullet sort of close (< 150 units)
+            self.bullet_data["distance"] < 75,             # 9: Bullet very close (< 75 units)
             
             # Special conditions
-            self.enemy_data["distance"] == -1,             # 14: No enemy detected
-            self.agent_data["speed"] == 0                  # 15: Ship is not moving
+            self.enemy_data["distance"] == -1,             # 10: No enemy detected
+            self.agent_data["speed"] == 0                  # 11: Ship is not moving
         ]
         
         # Return the result of the condition at the specified index
