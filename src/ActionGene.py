@@ -34,8 +34,7 @@ class ActionGene:
         - 0-1: Turn toward or away from the nearest wall
         - 2-3: Turn toward or away from the farthest wall
         - 4-5: Turn toward or away from the nearest enemy
-        - 6: Turn toward or away from the nearest bullet
-        - 7: Don't turn
+        - 6-7: Turn toward or away from the nearest bullet
         
         The turn_quantity parameter controls how sharp the turn is.
         """
@@ -58,17 +57,17 @@ class ActionGene:
                 elif angle < 0:
                     ai.turn(self.turn_quantity)       # Turn counter-clockwise
                     
-            # Case 2: Turn toward the farthest wall
+            # Case 2: Turn toward tracking
             case 2:
-                angle = self.agent.find_max_wall_angle(self.agent.agent_data["head_feelers"])
+                angle = self.agent.find_direction_diff()
                 if angle < 0:
                     ai.turn(-1 * self.turn_quantity)  # Turn clockwise
                 elif angle > 0:
                     ai.turn(self.turn_quantity)       # Turn counter-clockwise
                     
-            # Case 3: Turn away from the farthest wall
+            # Case 3: Turn against tracking
             case 3:
-                angle = self.agent.find_max_wall_angle(self.agent.agent_data["head_feelers"])
+                angle = self.agent.find_direction_diff()
                 if angle > 0:
                     ai.turn(-1 * self.turn_quantity)  # Turn clockwise
                 elif angle < 0:
@@ -98,9 +97,13 @@ class ActionGene:
                     elif self.agent.bullet_data["angle_to_shot"] < 0:
                         ai.turn(self.turn_quantity)       # Turn counter-clockwise
 
-            # Case 7: Don't turn
+            # Case 7: Turn away from the nearest bullet
             case 7:
-                return 
+                if self.agent.bullet_data["X"] != -1:  # Check if bullet is detected
+                    if self.agent.bullet_data["angle_to_shot"] > 0:
+                        ai.turn(-1 * self.turn_quantity)  # Turn clockwise
+                    elif self.agent.bullet_data["angle_to_shot"] < 0:
+                        ai.turn(self.turn_quantity)       # Turn counter-clockwise
                         
 
     def act(self):

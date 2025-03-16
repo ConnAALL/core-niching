@@ -86,10 +86,10 @@ class CoreAgent(ShipData):
         # Misc 
         step = 10
         self.generate_feelers(step) # Generate feelers at every stepth degree from 0-359 degrees
+        self.debug = debug # Set to true if we want to print out a bunch of info about the agent while its running
 
     def increment_gene_idx(self):
-        self.current_gene_idx = (self.current_gene_idx + 1) \
-                                % self.GENES_PER_LOOP
+        self.current_gene_idx = (self.current_gene_idx + 1) % self.GENES_PER_LOOP
         return self.current_gene_idx
     
     def update_score(self):
@@ -126,26 +126,23 @@ class CoreAgent(ShipData):
         if not os.path.exists(csv_path):
             print(f"First run for {self.bot_name} - creating new CSV and chromosome")
             self.create_csv()
-            #return Evolver.generate_chromosome()
-            #return ([['100001001', '011101010', '011011001', '011100101', '000100011', '000111000', '000100101', '000010111'], ['100010101', '001001001', '011001111', '001000111', '011001110', '001001010', '010110100', '011001001'], ['100101100', '011100110', '010011001', '010001000', '000110111', '010101010', '000000100', '001010010'], ['100111010', '000110111', '010110111', '000011011', '000001011', '001110101', '000110011', '000000111'], ['101000110', '000101101', '000101101', '000100010', '010111100', '001111010', '011101010', '010111111'], ['101010111', '001110100', '001100011', '010010110', '000110001', '011111001', '010001001', '011110010'], ['101101110', '001111011', '001001000', '011110000', '001101101', '011101010', '000011101', '010001010'], ['101111011', '001010010', '000111100', '001111100', '010000111', '011110110', '001010100', '010101000'], ['110000000', '010010100', '000100100', '010000101', '001011000', '010111111', '010011101', '001110100'], ['110010100', '001001011', '001110101', '011001111', '001000101', '000111010', '010011110', '000000100'], ['110101001', '011101001', '001110110', '000101011', '000011001', '010010000', '010101011', '001011100'], ['110110000', '000010101', '010100111', '011111001', '011101111', '010001000', '000111000', '001100000'], ['111000001', '011111101', '001101100', '010111111', '001111001', '010000001', '010011101', '000101000'], ['111010111', '001100000', '010110011', '000111111', '001001110', '010110010', '000000101', '011011110'], ['111101111', '001010101', '001101101', '011101101', '000011010', '010010000', '001001111', '000011101'], ['111111110', '001001110', '010000010', '000011001', '000000100', '010011011', '000110110', '000000001']])
-            chrom = [['100111010', '010111010', '010111000', '001111100', '000111000', '010111010', '010111100', '011111010'],
-                    ['100111001', '011111110', '011111011', '000111010', '011111111', '011111110', '010111101', '011111011'],
-                    ['100111101', '000111000', '001111000', '011111100', '011111000', '011111000', '010111011', '011111011'],
-                    ['100111111', '010111001', '000111011', '001111001', '011111110', '000111110', '000111001', '000111001'],
-                    ['101111010', '000111100', '010111110', '001111001', '000111001', '000111110', '011111011', '011111010'],
-                    ['101111001', '001111110', '011111000', '011111000', '000111100', '001111100', '011111000', '000111100'],
-                    ['101111111', '001111010', '001111011', '010111101', '001111000', '010111101', '011111110', '001111111'],
-                    ['101111111', '000111010', '010111011', '000111011', '000111011', '010111011', '001111000', '010111100'],
-                    ['110111110', '010111001', '000111111', '011111001', '011111100', '001111010', '011111011', '000111101'],
-                    ['110111100', '001111110', '011111001', '000111101', '011111101', '001111100', '000111100', '000111000'],
-                    ['110111000', '001111001', '000111101', '011111110', '010111011', '001111101', '011111101', '010111010'],
-                    ['110111110', '011111101', '010111011', '000111011', '001111101', '011111100', '001111110', '010111100'],
-                    ['111111000', '001111011', '010111110', '000111010', '010111011', '010111101', '010111010', '000111000'],
-                    ['111111000', '000111100', '011111100', '000111111', '000111100', '000111000', '011111000', '011111110'],
-                    ['111111100', '011111100', '010111101', '011111001', '011111111', '010111101', '000111110', '001111000'],
-                    ['111111010', '001111100', '011111100', '000111011', '010111111', '001111001', '011111000', '000111110']] # max turn 
+            max_turn = [
+                ['100000110', '011111101', '011111001', '010111101', '001101111', '001101110', '011111111', '001101110'],
+                ['100011111', '010110111', '001111000', '011101111', '011111100', '000111110', '010111100', '000101100'],
+                ['100100111', '010111111', '000111111', '001000111', '011001111', '011011111', '010000111', '000000110'],
+                ['100111111', '010101110', '010111000', '000111111', '010111111', '000111111', '001100111', '000111110'],
+                ['101000111', '000110111', '011111010', '001111110', '000100111', '000101111', '001011111', '000011111'],
+                ['101011011', '010101111', '001111111', '001001111', '010101011', '011110111', '000010101', '011111010'],
+                ['101111111', '011010111', '000111111', '001111111', '000011111', '001111111', '010111111', '010101101'],
+                ['101111101', '010100011', '001111111', '001111111', '001110111', '001111101', '011010111', '010100111'],
+                ['110001111', '001111011', '001111111', '010111111', '001000111', '010111011', '001111111', '001101111'],
+                ['110011111', '000001111', '010111101', '001011001', '011111101', '001111111', '000011111', '011000000'],
+                ['110100111', '011011111', '000011111', '011101111', '011101111', '010001111', '000101111', '001111110'],
+                ['110110111', '001111111', '010000111', '000011111', '011101111', '011111011', '010111111', '010111111']]
 
-            return chrom
+            return max_turn
+            #return Evolver.generate_chromosome()
+
         # Check if CSV exists and has data
         if os.path.exists(csv_path):
             with open(csv_path, 'r', newline='') as csvfile:
@@ -296,10 +293,7 @@ class CoreAgent(ShipData):
         self.write_soul_data()
 
     def find_min_wall_angle(self, wall_feelers):
-        #for wall in wall_feelers:
-        #    print(wall)
         min_wall = min(wall_feelers)
-        #print(min_wall)
         min_index = wall_feelers.index(min_wall)
         angle = int(10 * min_index)
         return angle if angle < 180 else angle - 360
@@ -309,6 +303,12 @@ class CoreAgent(ShipData):
         max_index = wall_feelers.index(max_wall)
         angle = int(10 * max_index)
         return angle if angle < 180 else angle - 360
+    
+    def find_direction_diff(self):
+        tracking = abs(ai.selfTrackingDeg() - 180)
+        heading = abs(ai.selfHeadingDeg() - 180)
+        direction_diff = tracking - heading
+        return direction_diff
 
     def check_conditional(self, conditional_index):
         """
@@ -327,48 +327,48 @@ class CoreAgent(ShipData):
         - Absence of enemies or movement
         
         Parameters:
-            conditional_index: Integer index (0-15) specifying which condition to check
+            conditional_index: Integer index (0-12) specifying which condition to check
             
         Returns:
             Boolean result of the evaluated condition (True/False)
         """
+
         # Get the minimum distance to a wall from all feelers
         min_wall_dist = min(self.agent_data["head_feelers"])
-        print(f"heading {ai.selfHeadingDeg()}")
-        print(f"tracking {ai.selfTrackingDeg()}")
-        print(f"closest wall is {min_wall_dist} away")
-        print(f"Closest bullet is {self.bullet_data['distance']} away")
-        print(f"Speed is {self.agent_data['speed']}")
+        direction_diff = abs(self.find_direction_diff())
 
+        if self.debug:
+            print(f"Heading {ai.selfHeadingDeg()}, Tracking {ai.selfTrackingDeg()}, Diff {direction_diff}")
+            print(f"Closest wall is {min_wall_dist} away")
+            print(f"Closest bullet is {self.bullet_data['distance']} away")
+            print(f"Closest enemy is {self.enemy_data['distance']} away")
+            print(f"Speed is {self.agent_data['speed']}")
+            
         # List of all possible conditions that can be checked
         conditional_list = [
             # Speed-based conditions
-            self.agent_data["speed"] < 6,                  # 0: Speed too low (< 6)
-            self.agent_data["speed"] > 10,                 # 1: Speed too high (> 10)
+            self.agent_data["speed"] < 5,                  # 0: Speed too low (< 5)
+            self.agent_data["speed"] > 12,                 # 1: Speed too high (> 12)
             
             # Enemy-based conditions
-            self.enemy_data["distance"] < 50,              # 2: Enemy very close (< 50 units)
-            self.agent_data["head_feelers"][0] < 100,      # 3: Wall directly ahead (< 100 units)
-            
-            # Enemy in specific directions with distance thresholds
-            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 1,  # 4: Enemy in NE quadrant, close
-            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 2,  # 5: Enemy in NW quadrant, close
-            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 3,  # 6: Enemy in SW quadrant, close
-            self.enemy_data["distance"] < 100 and self.enemy_data["direction"] == 4,  # 7: Enemy in SE quadrant, close
+            self.enemy_data["distance"] < 100,             # 2: Enemy within firing distance (< 100 units)
+            self.enemy_data["distance"] < 250,             # 3: Enemy far but still visable (< 250 units)
             
             # Wall distance thresholds
-            min_wall_dist < 75,                            # 8: Wall very close (< 75 units)
-            min_wall_dist < 200,                           # 9: Wall moderately close (< 200 units)
-            min_wall_dist > 300,                           # 10: No walls nearby (> 300 units)
+            min_wall_dist < 75,                            # 4: Wall very close (< 75 units)
+            min_wall_dist < 200,                           # 5: Wall sort of close (< 200 units)
+            
+            # Difference in tracking and heading thresholds 
+            direction_diff > 50,                           # 6: Ship is a bit off course (< 50 degrees)
+            direction_diff > 100,                          # 7: Ship is very off course (< 100 degrees)
             
             # Bullet distance thresholds
-            self.bullet_data["distance"] < 100,            # 11: Bullet close (< 100 units)
-            self.bullet_data["distance"] < 200,            # 12: Bullet moderately close (< 200 units)
-            self.bullet_data["distance"] < 50,             # 13: Bullet very close (< 50 units)
+            self.bullet_data["distance"] < 150,             # 8: Bullet sort of close (< 150 units)
+            self.bullet_data["distance"] < 75,             # 9: Bullet very close (< 75 units)
             
             # Special conditions
-            self.enemy_data["distance"] == -1,             # 14: No enemy detected
-            self.agent_data["speed"] == 0                  # 15: Ship is not moving
+            self.enemy_data["distance"] == -1,             # 10: No enemy detected
+            self.agent_data["speed"] == 0                  # 11: Ship is not moving
         ]
         
         # Return the result of the condition at the specified index
@@ -402,8 +402,10 @@ def loop():
 
     try:
         if ai.selfAlive() == 1:
+            
+            #if agent.debug:
+            #    print(agent.dec_chromosome)
 
-            #print(f"Agent {bot_name} speed is {agent.agent_data['speed']}.")
             if agent.spawn_set == False: # Agent is spawning in
                 agent.update_agent_data()
                 agent.SPAWN_QUAD = agent.set_spawn_quad()            
@@ -421,7 +423,7 @@ def loop():
             
             if agent.time_born == -1.0:
                 agent.time_born = time.time() # For age of adolescence and regeneration pause
-                print("Time born set")
+                #print("Time born set")
 
             if agent.agent_data["X"] != ai.selfX() or agent.agent_data["Y"] != ai.selfY(): # If agent is moving update time
                 agent.movement_timer = time.time()
@@ -436,7 +438,7 @@ def loop():
 
             if agent.regeneration_pause and time.time() - agent.time_born >= agent.pause_penalty: # If pause penalty is up, we are good
                 agent.regeneration_pause = False 
-                print("Regen Penalty Over")
+                #print("Regen Penalty Over")
             
             if agent.regeneration_pause: # We gotta wait for the pause penalty to be done
                 return
@@ -446,8 +448,9 @@ def loop():
 
                 # Initialize the first loop if not already started
                 if not agent.current_loop_started:
-                    agent.current_loop = agent.dec_chromosome[0]  # Start with the first loop in the chromosome
+                    agent.current_loop = agent.dec_chromosome[1]  # Start with the no speed condition because thats accurate to where you will start
                     agent.current_loop_started = True
+                    ai.thrust(1)
                 
                 agent.frames_dead = 0  # Reset frames dead counter since agent is alive
                 
@@ -467,9 +470,8 @@ def loop():
                     # Check if the condition specified by this jump gene is true, if it isnt, move on to the next one in the list
                     if agent.check_conditional(gene[1]):
                         # Condition is true, jump to the specified loop
-                        agent.current_loop_idx = gene[2]  # Set the new loop index
-                        agent.current_loop = \
-                            agent.dec_chromosome[agent.current_loop_idx]  # Get the loop from the decoded chromosome
+                        agent.current_loop_idx = gene[1]  # Set the new loop index (same as conditional idx)
+                        agent.current_loop = agent.dec_chromosome[agent.current_loop_idx]  # Get the loop from the decoded chromosome
                         agent.current_gene_idx = 0  # Start executing from the first gene in the new loop
                         return  # Exit the current execution cycle
                     else:
@@ -482,8 +484,7 @@ def loop():
                 gene = agent.current_loop[agent.current_gene_idx]
                 
                 # Create and execute an ActionGene to control the ship based on the gene data
-                if not agent.regeneration_pause:
-                    ActionGene(gene, agent)
+                ActionGene(gene, agent)
                 
                 # Move to the next gene for the next execution cycle
                 agent.increment_gene_idx()
@@ -539,6 +540,7 @@ def loop():
             f.write(traceback_str)
             f.write(str(agent.bin_chromosome))
             f.write(str(agent.dec_chromosome))
+            f.write(str(agent.current_loop_idx))
         ai.quitAI()
 
 def main():
@@ -548,8 +550,12 @@ def main():
         global agent
         agent = None
         HEADLESS = ""
+        global debug
+        debug = False
 
-        answers = ["f", "false", "0", "n", "no", "headless_false", "head_false"] # Answers that let you turn headless off
+        head_answers = ["f", "false", "0", "n", "no", "headless_false", "head_false"] # Answers that let you turn headless off
+        debug_answers = ["t", "true", "1", "y", "yes", "debug_true"]
+
         if len(sys.argv) > 2: # If we specified we want to run in headless mode or not 
             ans = sys.argv[2].lower() # Make answer consistent
             HEADLESS = ans
@@ -562,9 +568,12 @@ def main():
         else:
             team = -1
         
-        if HEADLESS not in answers: # If we did not argue something that sounds like we don't want it to run in headless, run in headless
+        if len(sys.argv) > 4 and (sys.argv[4].lower()) in debug_answers: # If we want to launch in debug mode
+            debug = True
+
+        if HEADLESS not in head_answers: # If we did not argue something that sounds like we don't want it to run in headless, run in headless
             ai.headlessMode()
-        
+            
         if team != -1:
             ai.start(loop, ["-name", bot_name, "-join", SERVER_IP, "-team", str(team)])
         else:

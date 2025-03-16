@@ -1,4 +1,6 @@
 High Prority:
+-1 - WHY THE FUCK DO LOOP NUMBERS WORK THE WAY THEY DO I NEED TO EITHER FIX THIS OR UNDERSTAND IT SOMEHOW, THERE IS NO REASON THE LOOP INDEXING SHOULD HAVE 
+WORKED BEFORE AND NOW FOR SOME REASON WHEN I FIX IT IT BREAKS AND IT DOESNT LET ME SIMPLIFY THE CHROMOSOME
 0 - see if you can get a good core agent going with the current action gene, just like hard coded 
 1 - Add a gene to loop about when tracking and heading are not similiar, that means you are off track, when tracking and heading are similiar and speed is high, don't thrust, you can thrust otherwise to try and save yourself from debris knockback
 # check the direction you are heading is where your heading is, so if heading != tracking, its going off course, if going off course, its okay to speed up to save yourself from pushback, if heading and tracking are the same, speed limit needed (dont thrust if above a certain speed)

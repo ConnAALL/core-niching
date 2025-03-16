@@ -81,15 +81,15 @@ class CoreAgent(ShipData):
         self.adult = False # Is agent adult?
         self.age_of_adolescence = 0 # This many seconds old to be an adult and not mutate on self death
         self.regeneration_pause = False # Should I pause on self death?
-        self.pause_penalty = 2 # Pause for this many seconds after a self death
+        self.pause_penalty = 0 # Pause for this many seconds after a self death
 
         # Misc 
         step = 10
         self.generate_feelers(step) # Generate feelers at every stepth degree from 0-359 degrees
+        self.debug = debug # Set to true if we want to print out a bunch of info about the agent while its running
 
     def increment_gene_idx(self):
-        self.current_gene_idx = (self.current_gene_idx + 1) \
-                                % self.GENES_PER_LOOP
+        self.current_gene_idx = (self.current_gene_idx + 1) % self.GENES_PER_LOOP
         return self.current_gene_idx
     
     def update_score(self):
@@ -288,6 +288,12 @@ class CoreAgent(ShipData):
         max_index = wall_feelers.index(max_wall)
         angle = int(10 * max_index)
         return angle if angle < 180 else angle - 360
+    
+    def find_direction_diff(self):
+        tracking = abs(ai.selfTrackingDeg() - 180)
+        heading = abs(ai.selfHeadingDeg() - 180)
+        direction_diff = tracking - heading
+        return direction_diff
 
     def check_conditional(self, conditional_index):
         """
@@ -306,24 +312,23 @@ class CoreAgent(ShipData):
         - Absence of enemies or movement
         
         Parameters:
-            conditional_index: Integer index (0-15) specifying which condition to check
+            conditional_index: Integer index (0-12) specifying which condition to check
             
         Returns:
             Boolean result of the evaluated condition (True/False)
         """
-        # del min_wall_dist > 300,  (never happened)
-        # del             self.bullet_data["distance"] < 100,  self.bullet_data["distance"] < 200, (redundant)            
-        # add self.bullet_data["distance"] < 150 (replacement)
-        # add heading and tracking diff by more than 50
-        # add heading and tracking diff by more than 100
+
         # Get the minimum distance to a wall from all feelers
         min_wall_dist = min(self.agent_data["head_feelers"])
-        tracking = ai.selfTrackingDeg()
-        heading = ai.selfHeadingDeg()
-        direction_diff = abs(tracking - heading) 
-        #print(f"heading {ai.selfHeadingDeg()}")
-        #print(f"tracking {ai.selfTrackingDeg()}")
-        
+        direction_diff = abs(self.find_direction_diff())
+
+        if self.debug:
+            print(f"Heading {ai.selfHeadingDeg()}, Tracking {ai.selfTrackingDeg()}, Diff {direction_diff}")
+            print(f"Closest wall is {min_wall_dist} away")
+            print(f"Closest bullet is {self.bullet_data['distance']} away")
+            print(f"Closest enemy is {self.enemy_data['distance']} away")
+            print(f"Speed is {self.agent_data['speed']}")
+            
         # List of all possible conditions that can be checked
         conditional_list = [
             # Speed-based conditions
@@ -331,7 +336,7 @@ class CoreAgent(ShipData):
             self.agent_data["speed"] > 12,                 # 1: Speed too high (> 12)
             
             # Enemy-based conditions
-            self.enemy_data["distance"] < 100,             # 2: Enemy approaching (< 100 units)
+            self.enemy_data["distance"] < 100,             # 2: Enemy within firing distance (< 100 units)
             self.enemy_data["distance"] < 250,             # 3: Enemy far but still visable (< 250 units)
             
             # Wall distance thresholds
@@ -383,8 +388,9 @@ def loop():
     try:
         if ai.selfAlive() == 1:
             
-            #print(f"Agent {bot_name} speed is {agent.agent_data['speed']}.")
-            
+            #if agent.debug:
+            #    print(agent.dec_chromosome)
+
             if agent.spawn_set == False: # Agent is spawning in
                 agent.update_agent_data()
                 agent.SPAWN_QUAD = agent.set_spawn_quad()            
@@ -427,8 +433,9 @@ def loop():
 
                 # Initialize the first loop if not already started
                 if not agent.current_loop_started:
-                    agent.current_loop = agent.dec_chromosome[0]  # Start with the first loop in the chromosome
+                    agent.current_loop = agent.dec_chromosome[1]  # Start with the no speed condition because thats accurate to where you will start
                     agent.current_loop_started = True
+                    ai.thrust(1)
                 
                 agent.frames_dead = 0  # Reset frames dead counter since agent is alive
                 
@@ -448,9 +455,8 @@ def loop():
                     # Check if the condition specified by this jump gene is true, if it isnt, move on to the next one in the list
                     if agent.check_conditional(gene[1]):
                         # Condition is true, jump to the specified loop
-                        agent.current_loop_idx = gene[2]  # Set the new loop index
-                        agent.current_loop = \
-                            agent.dec_chromosome[agent.current_loop_idx]  # Get the loop from the decoded chromosome
+                        agent.current_loop_idx = gene[1]  # Set the new loop index (same as conditional idx)
+                        agent.current_loop = agent.dec_chromosome[agent.current_loop_idx]  # Get the loop from the decoded chromosome
                         agent.current_gene_idx = 0  # Start executing from the first gene in the new loop
                         return  # Exit the current execution cycle
                     else:
@@ -519,6 +525,7 @@ def loop():
             f.write(traceback_str)
             f.write(str(agent.bin_chromosome))
             f.write(str(agent.dec_chromosome))
+            f.write(str(agent.current_loop_idx))
         ai.quitAI()
 
 def main():
@@ -528,8 +535,12 @@ def main():
         global agent
         agent = None
         HEADLESS = ""
+        global debug
+        debug = False
 
-        answers = ["f", "false", "0", "n", "no", "headless_false", "head_false"] # Answers that let you turn headless off
+        head_answers = ["f", "false", "0", "n", "no", "headless_false", "head_false"] # Answers that let you turn headless off
+        debug_answers = ["t", "true", "1", "y", "yes", "debug_true"]
+
         if len(sys.argv) > 2: # If we specified we want to run in headless mode or not 
             ans = sys.argv[2].lower() # Make answer consistent
             HEADLESS = ans
@@ -542,9 +553,12 @@ def main():
         else:
             team = -1
         
-        if HEADLESS not in answers: # If we did not argue something that sounds like we don't want it to run in headless, run in headless
+        if len(sys.argv) > 4 and (sys.argv[4].lower()) in debug_answers: # If we want to launch in debug mode
+            debug = True
+
+        if HEADLESS not in head_answers: # If we did not argue something that sounds like we don't want it to run in headless, run in headless
             ai.headlessMode()
-        
+            
         if team != -1:
             ai.start(loop, ["-name", bot_name, "-join", SERVER_IP, "-team", str(team)])
         else:

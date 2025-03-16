@@ -9,6 +9,6 @@ echo "Starting Xpilots Server"
 sleep 1
 
 # + = disable, - = enable, https://code.google.com/archive/p/xpilot-ai/wikis/Options.wiki for options
-$REPO_ROOT/src/Engine/xpilots_mod -map $REPO_ROOT/src/Engine/maps/core.xp -noquit +teamPlay -maxRoundTime 60 -roundsToPlay 0 +limitedLives -maxClientsPerIP 120
+$REPO_ROOT/src/Engine/xpilots_mod -map $REPO_ROOT/src/Engine/maps/core_teams.xp -noquit +teamPlay -maxRoundTime 60 -roundsToPlay 0 +limitedLives -maxClientsPerIP 120 +teamImmunity +switchBase 1.0 
 wait;
 
