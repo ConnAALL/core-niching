@@ -32,7 +32,7 @@ class ActionGene:
         
         This method implements 8 different turning strategies (0-7):
         - 0-1: Turn toward or away from the nearest wall
-        - 2-3: Turn toward or away from the farthest wall
+        - 2-3: Turn toward or away from agents tracking
         - 4-5: Turn toward or away from the nearest enemy
         - 6-7: Turn toward or away from the nearest bullet
         
