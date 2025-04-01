@@ -89,14 +89,14 @@ class ActionGene:
                     else:
                         ai.turn(self.turn_quantity)       # Turn counter-clockwise
 
-            # Case 6: Turn away from the nearest bullet
+            # Case 6: Turn toward the nearest bullet
             case 6:
                 if self.agent.bullet_data["X"] != -1:  # Check if bullet is detected
-                    if self.agent.bullet_data["angle_to_shot"] > 0:
+                    if self.agent.bullet_data["angle_to_shot"] < 0:
                         ai.turn(-1 * self.turn_quantity)  # Turn clockwise
-                    elif self.agent.bullet_data["angle_to_shot"] < 0:
+                    elif self.agent.bullet_data["angle_to_shot"] > 0:
                         ai.turn(self.turn_quantity)       # Turn counter-clockwise
-
+                        
             # Case 7: Turn away from the nearest bullet
             case 7:
                 if self.agent.bullet_data["X"] != -1:  # Check if bullet is detected
