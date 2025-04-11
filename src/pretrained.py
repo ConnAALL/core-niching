@@ -81,7 +81,7 @@ class CoreAgent(ShipData):
         self.adult = False # Is agent adult?
         self.age_of_adolescence = 0 # This many seconds old to be an adult and not mutate on self death
         self.regeneration_pause = False # Should I pause on self death?
-        self.pause_penalty = 0 # Pause for this many seconds after a self death
+        self.pause_penalty = 2 # Pause for this many seconds after a self death
 
         # Misc 
         step = 10
@@ -126,22 +126,11 @@ class CoreAgent(ShipData):
         if not os.path.exists(csv_path):
             print(f"First run for {self.bot_name} - creating new CSV and chromosome")
             self.create_csv()
-            max_turn = [
-                ['100000110', '011111101', '011111001', '010111101', '001101111', '001101110', '011111111', '001101110'],
-                ['100011111', '010110111', '001111000', '011101111', '011111100', '000111110', '010111100', '000101100'],
-                ['100100111', '010111111', '000111111', '001000111', '011001111', '011011111', '010000111', '000000110'],
-                ['100111111', '010101110', '010111000', '000111111', '010111111', '000111111', '001100111', '000111110'],
-                ['101000111', '000110111', '011111010', '001111110', '000100111', '000101111', '001011111', '000011111'],
-                ['101011011', '010101111', '001111111', '001001111', '010101011', '011110111', '000010101', '011111010'],
-                ['101111111', '011010111', '000111111', '001111111', '000011111', '001111111', '010111111', '010101101'],
-                ['101111101', '010100011', '001111111', '001111111', '001110111', '001111101', '011010111', '010100111'],
-                ['110001111', '001111011', '001111111', '010111111', '001000111', '010111011', '001111111', '001101111'],
-                ['110011111', '000001111', '010111101', '001011001', '011111101', '001111111', '000011111', '011000000'],
-                ['110100111', '011011111', '000011111', '011101111', '011101111', '010001111', '000101111', '001111110'],
-                ['110110111', '001111111', '010000111', '000011111', '011101111', '011111011', '010111111', '010111111']]
-
+            chrome = Evolver.generate_chromosome()
+            max_turn = Evolver.make_max_turn(chrome)
+            print(chrome)
+            print(max_turn)
             return max_turn
-            #return Evolver.generate_chromosome()
 
         # Check if CSV exists and has data
         if os.path.exists(csv_path):
@@ -334,12 +323,14 @@ class CoreAgent(ShipData):
         """
 
         # Get the minimum distance to a wall from all feelers
-        min_wall_dist = min(self.agent_data["head_feelers"])
+        min_wall_dist_heading = min(self.agent_data["head_feelers"])
+        min_wall_dist_tracking = min(self.agent_data["track_feelers"])
         direction_diff = abs(self.find_direction_diff())
 
         if self.debug:
             print(f"Heading {ai.selfHeadingDeg()}, Tracking {ai.selfTrackingDeg()}, Diff {direction_diff}")
-            print(f"Closest wall is {min_wall_dist} away")
+            print(f"Closest wall (heading) is {min_wall_dist_heading} away")
+            print(f"Closest wall (tracking) is {min_wall_dist_tracking} away")
             print(f"Closest bullet is {self.bullet_data['distance']} away")
             print(f"Closest enemy is {self.enemy_data['distance']} away")
             print(f"Speed is {self.agent_data['speed']}")
@@ -354,22 +345,32 @@ class CoreAgent(ShipData):
             self.enemy_data["distance"] < 100,             # 2: Enemy within firing distance (< 100 units)
             self.enemy_data["distance"] < 250,             # 3: Enemy far but still visable (< 250 units)
             
-            # Wall distance thresholds
-            min_wall_dist < 75,                            # 4: Wall very close (< 75 units)
-            min_wall_dist < 200,                           # 5: Wall sort of close (< 200 units)
+            # Wall distance thresholds (heading)
+            min_wall_dist_heading < 75,                            # 4: Wall very close (< 75 units)
+            min_wall_dist_heading < 200,                           # 5: Wall sort of close (< 200 units)
+
+            # Wall distance thresholds (tracking)
+            min_wall_dist_tracking < 75,                            # 6: Wall very close (< 75 units)
+            min_wall_dist_tracking < 200,                           # 7: Wall sort of close (< 200 units)
             
+            # Wall right ahead (heading)
+            self.agent_data["head_feelers"][0] < 100,               # 8: We are facing a wall (heading)
+            
+            # Wall right ahead (tracking)
+            self.agent_data["track_feelers"][0] < 100,               # 9: Wall straight ahead (tracking)
+
             # Difference in tracking and heading thresholds 
-            direction_diff > 50,                           # 6: Ship is a bit off course (< 50 degrees)
-            direction_diff > 100,                          # 7: Ship is very off course (< 100 degrees)
+            direction_diff > 50,                           # 10: Ship is a bit off course (< 50 degrees)
+            direction_diff > 100,                          # 11: Ship is very off course (< 100 degrees)
             
             # Bullet distance thresholds
-            self.bullet_data["distance"] < 150,             # 8: Bullet sort of close (< 150 units)
-            self.bullet_data["distance"] < 75,             # 9: Bullet very close (< 75 units)
+            self.bullet_data["distance"] < 150,             # 12: Bullet sort of close (< 150 units)
+            self.bullet_data["distance"] < 75,             # 13: Bullet very close (< 75 units)
             
             # Special conditions
-            self.enemy_data["distance"] == -1,             # 10: No enemy detected
-            self.agent_data["speed"] == 0                  # 11: Ship is not moving
-        ]
+            self.enemy_data["distance"] == -1,             # 14: No enemy detected
+            self.agent_data["speed"] == 0                  # 15: Ship is not moving
+            ]
         
         # Return the result of the condition at the specified index
         return conditional_list[conditional_index]

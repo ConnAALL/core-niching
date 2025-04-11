@@ -7,14 +7,14 @@ num_instances_per_team=30;
 
 # Loop from 1 to num_instances_per_team-1
 for ((j = 1; j <= 4; j++)); do	
+	# 1 not headless so we can see whats going on
+	python3 "$REPO_DIR/src/core_controller.py" "Q"$j"_"$num_instances_per_team "headless_false"&
 	for ((i = 1; i <= num_instances_per_team-1; i++)); do
 	    echo "Running instance $i"
 	    python3 "$REPO_DIR/src/core_controller.py" "Q"$j"_"$i "headless_true"&
 	    sleep 0.75;
 	    # Note that headless MUST be false if agents have limited lives
 	done
-	    # 1 more, not headless so we can see whats going on
-	    python3 "$REPO_DIR/src/core_controller.py" "Q"$j"_"$num_instances_per_team "headless_false"&
 done
 wait;
 

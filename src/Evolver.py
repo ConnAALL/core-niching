@@ -192,9 +192,9 @@ class Evolver():
                 else:  
                     # Parse individual action parameters from binary bits
                     shoot = bool(int(instruction_gene[1])) # Bit 2 is wether or not you should shoot
-                    thrust = bool(int(instruction_gene[2])) # Bit 3 is wether or not you should thrust (speed up for a frame)
-                    turn_quantity = int(instruction_gene[3:6], 2) # Literally make turn quantity with 3 bit integer in binary rep, bits 4-6, number 0-7 * 5
-                    turn_target = int(instruction_gene[6:], 2) # Make turn target with 3 bit integer in binary rep, bits 6-9, number 0-7 all correspond to different targets
+                    thrust = int(instruction_gene[2:4], 2) # Bit is the chance of thrusting (speed up for a frame), 00 = no thrust, 01 = 33% chance, 10 = 66% chance, 11 = 100% chance 
+                    turn_quantity = int(instruction_gene[4:7], 2) # Make turn quantity with 3 bit integer in binary rep, bits 4-6, number 0-7
+                    turn_target = int(instruction_gene[7:], 2) # Make turn target with 3 bit integer in binary rep, bits 6-9, number 0-7 all correspond to different targets
 
                     # Structure: True (indicates action gene), shoot, thrust, turn_quantity, turn_target
                     loop.append([True, shoot, thrust, turn_quantity,
@@ -208,22 +208,22 @@ class Evolver():
         """
         Generates a new random chromosome for initial population.
         
-        A chromosome consists of 12 loops with 8 genes per loop. Each gene is 9 bits:
+        A chromosome consists of 16 loops with 8 genes per loop. Each gene is 9 bits:
         - First gene in each loop is always a jump gene (first bit = '1')
         - Other genes are action genes (first bit = '0')
         - Jump genes' bits 1-4 are the conditional index, bits 5+ are the loop number
-        - Action genes' bits are: shoot (bit 1), thrust (bit 2), turn_quantity (bits 3-5), 
-          and turn_target (bits 6-8)
+        - Action genes' bits are: shoot (bit 1), thrust chance (bit 2-3), turn_quantity (bits 4-6), 
+          and turn_target (bits 7-9)
         
         Returns:
             A randomly generated chromosome
         """
         chromosome = []
-        for loop_index in range(12):
+        for loop_index in range(16):
             loop = []
-            for i in range(8): 
+            for i in range(9): 
                 gene = ""
-                for j in range(9): 
+                for j in range(10): 
                     # First gene in a loop is always a jump gene (bit 0 = '1')
                     if i == 0 and j == 0:  
                         gene += "1"
@@ -234,8 +234,8 @@ class Evolver():
                     elif i == 0 and j == 1:  
                         # 4 bit 0 padding to format loop_index as 4-bit binary
                         gene += format(loop_index, '04b')  
-                    # For jump genes, last 4 bits are all 0's, as there is no use for them
-                    elif i == 0 and j > 4:
+                    # For jump genes, last 5 bits are all 0's, as there is no use for them
+                    elif i == 0 and j > 5:
                         gene += "0"
                     # For action genes, randomly set all bits after the first
                     elif i > 0:  
@@ -243,3 +243,15 @@ class Evolver():
                 loop.append(gene)
             chromosome.append(loop)
         return chromosome
+    
+    @classmethod
+    def make_max_turn(cls, chrome):
+        modified = []
+        for row in chrome:
+            new_row = []
+            for gene in row:
+                if gene[0] != '1':  # Only modify if the gene does NOT start with '1'
+                    gene = gene[:3] + '111' + gene[6:]  # Set bits 3, 4, 5 to '1'
+                new_row.append(gene)
+            modified.append(new_row)
+        return modified

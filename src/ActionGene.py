@@ -16,11 +16,13 @@ class ActionGene:
         if gene[0] is False:
             print(gene)
             print("Unexpected action gene found")
-            
+        turn_roll = random.randint(1, 3) # Random int 0-2
         self.agent = agent                                # Reference to the agent executing the action
-        self.shoot = gene[1]                              # Boolean - whether to fire weapon this tick
-        self.thrust = 1 if gene[2] else 0                 # Convert boolean to int (1 = thrust on, 0 = off)
-        self.turn_quantity = int((gene[3] + 0) * 15)     # Scaling factor for turn amount
+        self.shoot = gene[1]                              # Boolean - whether to fire weapon this tick        
+        self.thrust = 0                                   # Thrust starts at 0
+        if gene[2] <= turn_roll and gene[2] > 0:          # If we have a chance of thrusting this frame, thrust if we roll lower or equal to our chance 
+            self.thrust = 1     
+        self.turn_quantity = int((gene[3] + 0) * 15)     # Scaling factor for turn amount, turn amount doesnt directly correspond to degrees
         self.turn_target = gene[4]                        # Target to turn towards (0-7 encoded values)
 
         # Execute the actions immediately upon gene creation
@@ -31,7 +33,7 @@ class ActionGene:
         Control the ship's turning behavior based on the turn_target parameter.
         
         This method implements 8 different turning strategies (0-7):
-        - 0-1: Turn toward or away from the nearest wall
+        - 0-1: Turn away from the nearest wall
         - 2-3: Turn toward or away from agents tracking
         - 4-5: Turn toward or away from the nearest enemy
         - 6-7: Turn toward or away from the nearest bullet
@@ -41,17 +43,17 @@ class ActionGene:
 
         # Use match-case statement to select turning behavior
         match self.turn_target:
-            # Case 0: Turn toward the nearest wall
+            # Case 0: Turn away from the nearest wall (heading)
             case 0:
                 angle = self.agent.find_min_wall_angle(self.agent.agent_data["head_feelers"])
-                if angle < 0:
+                if angle > 0:
                     ai.turn(-1 * self.turn_quantity)  # Turn clockwise
-                elif angle > 0:
+                elif angle < 0:
                     ai.turn(self.turn_quantity)       # Turn counter-clockwise
                     
-            # Case 1: Turn away from the nearest wall
+            # Case 1: Turn away from the nearest wall (tracking)
             case 1:
-                angle = self.agent.find_min_wall_angle(self.agent.agent_data["head_feelers"])
+                angle = self.agent.find_min_wall_angle(self.agent.agent_data["track_feelers"])
                 if angle > 0:
                     ai.turn(-1 * self.turn_quantity)  # Turn clockwise
                 elif angle < 0:
