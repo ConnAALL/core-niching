@@ -208,7 +208,7 @@ class Evolver():
         """
         Generates a new random chromosome for initial population.
         
-        A chromosome consists of 16 loops with 8 genes per loop. Each gene is 9 bits:
+        A chromosome consists of 14 loops with 8 genes per loop. Each gene is 9 bits:
         - First gene in each loop is always a jump gene (first bit = '1')
         - Other genes are action genes (first bit = '0')
         - Jump genes' bits 1-4 are the conditional index, bits 5+ are the loop number
@@ -219,7 +219,7 @@ class Evolver():
             A randomly generated chromosome
         """
         chromosome = []
-        for loop_index in range(16):
+        for loop_index in range(14):
             loop = []
             for i in range(9): 
                 gene = ""

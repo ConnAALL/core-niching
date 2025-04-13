@@ -1,7 +1,11 @@
 High Prority:
 
-1 - Fix agents crashing when regen penalty = 0
+1 - Randomly team kills seem to give very little minus points now,
+ either I fix that or find some other way to do the get kills thing, I have an idea how
+ also I can just neglect to fix this because we dont have a fitness function based on kills or anything, 
+ I just wanna be able to track kills I think its neat
 2 - Thought of a way to properly implement age of adolesence, do that
+3 - Better jump conditionals, they are fine now but they need a prority system
 
 Low Prority:
 
