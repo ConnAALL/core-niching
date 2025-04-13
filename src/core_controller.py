@@ -47,6 +47,7 @@ class CoreAgent(ShipData):
         self.initialized = False # Chromosome not yet generated
         self.MUT_RATE = 300
         self.GENES_PER_LOOP = 8
+        self.LOOPS_PER_CHROME = 16
         self.SPAWN_QUAD = None # Spawn quad isnt really all that important anymore, but its still cool to have so why not just keep it
         self.bot_name = bot_name
         self.current_loop = None
@@ -89,8 +90,13 @@ class CoreAgent(ShipData):
         self.debug = debug # Set to true if we want to print out a bunch of info about the agent while its running
 
     def increment_gene_idx(self):
+        reset = True if self.GENES_PER_LOOP == self.current_gene_idx + 1 else False # Return true if we looped around
         self.current_gene_idx = (self.current_gene_idx + 1) % self.GENES_PER_LOOP
-        return self.current_gene_idx
+        return reset
+    
+    def increment_loop_idx(self):
+        self.current_loop_idx = (self.current_loop_idx + 1) % self.LOOPS_PER_CHROME
+        return self.current_loop_idx
     
     def update_score(self):
         self.score = ai.selfScore()
@@ -338,17 +344,17 @@ class CoreAgent(ShipData):
             self.agent_data["speed"] > 12,                 # 1: Speed too high (> 12)
             
             # Enemy-based conditions
-            self.enemy_data["distance"] < 100,             # 2: Enemy within firing distance (< 100 units)
-            self.enemy_data["distance"] < 250,             # 3: Enemy far but still visable (< 250 units)
-            
+            self.enemy_data["distance"] < 250 and self.enemy_data["distance"] > 100,             # 2: Enemy far but still visable (< 250 units)
+            self.enemy_data["distance"] < 100,             # 3: Enemy within firing distance (< 100 units)
+
             # Wall distance thresholds (heading)
-            min_wall_dist_heading < 75,                            # 4: Wall very close (< 75 units)
-            min_wall_dist_heading < 200,                           # 5: Wall sort of close (< 200 units)
+            min_wall_dist_heading < 200 and min_wall_dist_heading > 75,                           # 4: Wall sort of close (< 200 units)
+            min_wall_dist_heading < 75,                            # 5: Wall very close (< 75 units)
 
             # Wall distance thresholds (tracking)
-            min_wall_dist_tracking < 75,                            # 6: Wall very close (< 75 units)
-            min_wall_dist_tracking < 200,                           # 7: Wall sort of close (< 200 units)
-            
+            min_wall_dist_tracking < 200 and min_wall_dist_tracking > 75,                           # 6: Wall sort of close (< 200 units)
+            min_wall_dist_tracking < 75,                            # 7: Wall very close (< 75 units)
+
             # Wall right ahead (heading)
             self.agent_data["head_feelers"][0] < 100,               # 8: We are facing a wall (heading)
             
@@ -356,11 +362,11 @@ class CoreAgent(ShipData):
             self.agent_data["track_feelers"][0] < 100,               # 9: Wall straight ahead (tracking)
 
             # Difference in tracking and heading thresholds 
-            direction_diff > 50,                           # 10: Ship is a bit off course (< 50 degrees)
-            direction_diff > 100,                          # 11: Ship is very off course (< 100 degrees)
-            
+            direction_diff > 100,                          # 10: Ship is very off course (< 100 degrees)
+            direction_diff > 30 and direction_diff < 100,                           # 11: Ship is a bit off course (< 30 degrees)
+
             # Bullet distance thresholds
-            self.bullet_data["distance"] < 150,             # 12: Bullet sort of close (< 150 units)
+            self.bullet_data["distance"] < 150 and self.bullet_data["distance"] > 75,             # 12: Bullet sort of close (< 150 units)
             self.bullet_data["distance"] < 75,             # 13: Bullet very close (< 75 units)
             
             # Special conditions
@@ -445,7 +451,7 @@ def loop():
 
                 # Initialize the first loop if not already started
                 if not agent.current_loop_started:
-                    agent.current_loop = agent.dec_chromosome[1]  # Start with the no speed condition because thats accurate to where you will start
+                    agent.current_loop = agent.dec_chromosome[15]  # Start with the no speed condition because thats accurate to where you will start
                     agent.current_loop_started = True
                     ai.thrust(1)
                 
@@ -461,26 +467,31 @@ def loop():
                 
                 # Get the current gene to execute from the current loop
                 gene = agent.current_loop[agent.current_gene_idx]
-                
+                if agent.debug:
+                    print(f"At gene {agent.current_loop_idx}.")
                 # Process jump genes (control flow instructions)
                 if Evolver.is_jump_gene(gene): # If we have reached a jump gene
                     # Check if the condition specified by this jump gene is true, if it isnt, move on to the next one in the list
                     if agent.check_conditional(gene[1]):
                         # Condition is true, jump to the specified loop
                         agent.current_loop_idx = gene[1]  # Set the new loop index (same as conditional idx)
+                        if agent.debug:
+                                print(f"Jumped to gene {gene[1]}.")
                         agent.current_loop = agent.dec_chromosome[agent.current_loop_idx]  # Get the loop from the decoded chromosome
                         agent.current_gene_idx = 0  # Start executing from the first gene in the new loop
-                        return  # Exit the current execution cycle
+                        agent.increment_gene_idx() # Get out of jump gene territory
                     else:
                         # Condition is false, move to the next gene in sequence
-                        agent.increment_gene_idx()
+                        agent.increment_loop_idx()
+                        agent.current_loop = agent.dec_chromosome[agent.current_loop_idx]  # Get the loop from the decoded chromosome
+                    return # Done with jump eval
 
                 # Now we have found our conditional
                 # Process action genes (ship control instructions)
-                # Get the current gene again (could be different if we've moved to the next one after a failed jump)
+                # Get the current gene again (could be different if we've moved to the next one after a jump)
                 gene = agent.current_loop[agent.current_gene_idx]
                 
-                # Create and execute an ActionGene to control the ship based on the gene data
+                # Execute an ActionGene to control the ship based on the gene data
                 ActionGene(gene, agent)
                 
                 # Move to the next gene for the next execution cycle
