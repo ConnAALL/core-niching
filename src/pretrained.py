@@ -214,8 +214,9 @@ class CoreAgent(ShipData):
     def get_kills(self):
         # If we got plus or minus 9 pts, it means we got a kill, minus is fine because team killing counts
         compare_score = abs(self.score - ai.selfScore())
-        if compare_score > 9.0:
-            self.num_kills += 1
+        if compare_score > 100.0:
+            if ai.selfAlive() == 1: # Only way to get + or - 9 pts while not dying is getting a kill
+                self.num_kills += 1
         self.score = ai.selfScore()
         
     def was_killed(self):        
@@ -301,14 +302,12 @@ class CoreAgent(ShipData):
         direction_diff = tracking - heading
         return direction_diff
 
-    def check_conditional(self, conditional_index):
+    def check_conditionals(self):
         """
         Evaluates environmental conditions based on a conditional index value.
         
-        Littearly a production system of sorts that jumps to a certain gene in 
-        the chromosome to handle behaviors if certain conditions are met. As of right now
-        its just the same action gene each time. Might be good to write specialized action
-        genes for certain conditions. 
+        Literally a production system of sorts that jumps to a certain gene in 
+        the chromosome to handle behaviors if certain conditions are met. 
         
         The conditions cover a variety of game state situations:
         - Ship speed ranges (too slow, too fast)
@@ -317,11 +316,8 @@ class CoreAgent(ShipData):
         - Bullet proximity (evasion)
         - Absence of enemies or movement
         
-        Parameters:
-            conditional_index: Integer index (0-12) specifying which condition to check
-            
         Returns:
-            Boolean result of the evaluated condition (True/False)
+            Conditional index of most important conditional satisfied
         """
 
         # Get the minimum distance to a wall from all feelers
@@ -336,42 +332,80 @@ class CoreAgent(ShipData):
             print(f"Closest bullet is {self.bullet_data['distance']} away")
             print(f"Closest enemy is {self.enemy_data['distance']} away")
             print(f"Speed is {self.agent_data['speed']}")
-            
+
         # List of all possible conditions that can be checked
         conditional_list = [
             # Special conditions
             self.enemy_data["distance"] == -1,             # 0: No enemy detected
             self.agent_data["speed"] == 0,                  # 1: Ship is not moving
+            
+            # Enemy-based conditions 1
+            self.enemy_data["distance"] < 200 and self.enemy_data["distance"] > 100,             # 2: Enemy far but still visable (< 200 units)
+
+            # Wall distance thresholds 1
+            min_wall_dist_heading < 200 and min_wall_dist_heading > 100,                           # 3: Wall sort of close (< 200 units)
+
+            # Bullet distance thresholds 1
+            self.bullet_data["distance"] < 150 and self.bullet_data["distance"] > 75,             # 4: Bullet sort of close (< 150 units)
 
             # Speed-based conditions
-            self.agent_data["speed"] < 5,                  # 2: Speed too low (< 5)
-            self.agent_data["speed"] > 12,                 # 3: Speed too high (> 12)
-            
-            # Enemy-based conditions
-            self.enemy_data["distance"] < 250 and self.enemy_data["distance"] > 100,             # 4: Enemy far but still visable (< 250 units)
-            self.enemy_data["distance"] < 100,             # 5: Enemy within firing distance (< 100 units)
-
-            # Wall distance thresholds (heading)
-            min_wall_dist_heading < 200 and min_wall_dist_heading > 75,                           # 6: Wall sort of close (< 200 units)
-            min_wall_dist_heading < 75,                            # 7: Wall very close (< 75 units)
-
-            # Wall right ahead (heading)
-            self.agent_data["head_feelers"][0] < 100,               # 8: We are facing a wall (heading)
-            
-            # Wall right ahead (tracking)
-            self.agent_data["track_feelers"][0] < 100,               # 9: Wall straight ahead (tracking)
+            self.agent_data["speed"] < 5,                  # 5: Speed too low (< 5)
+            self.agent_data["speed"] > 12,                 # 6: Speed too high (> 12)
 
             # Difference in tracking and heading thresholds 
-            direction_diff > 100,                          # 10: Ship is very off course (< 100 degrees)
-            direction_diff > 30 and direction_diff < 100,                           # 11: Ship is a bit off course (< 30 degrees)
+            direction_diff > 100,                          # 7: Ship is very off course (< 100 degrees)
+            direction_diff > 30 and direction_diff < 100,                           # 8: Ship is a bit off course (< 30 degrees)
 
-            # Bullet distance thresholds
-            self.bullet_data["distance"] < 150 and self.bullet_data["distance"] > 75,             # 12: Bullet sort of close (< 150 units)
-            self.bullet_data["distance"] < 75             # 13: Bullet very close (< 75 units)
+            # Enemy-based conditions 2
+            self.enemy_data["distance"] < 100,             # 9: Enemy within firing distance (< 100 units)
+
+            # Wall distance thresholds 2
+            min_wall_dist_heading < 100 and min_wall_dist_heading > -1,                            # 10: Wall very close (< 100 units)
+
+            # Bullet distance thresholds 2
+            self.bullet_data["distance"] < 75 and self.bullet_data["distance"] > -1,           # 11: Bullet very close (< 75 units)
+
+            # Wall right ahead (tracking)
+            self.agent_data["track_feelers"][0] < 100,               # 12: Wall straight ahead (tracking)
+
+            # Wall right ahead (heading)
+            self.agent_data["head_feelers"][0] < 100               # 13: We are facing a wall (heading)
             ]
-        
-        # Return the result of the condition at the specified index
-        return conditional_list[conditional_index]
+
+        conds = [i for i, condition in enumerate(conditional_list) if condition] # List of all true conditionals
+
+        closest_thing = {}
+        if 2 in conds:
+            closest_thing[2] = self.enemy_data["distance"]
+        if 3 in conds:
+            closest_thing[3] = min_wall_dist_heading
+        if 4 in conds:
+            closest_thing[4] = self.bullet_data["distance"]
+
+        if closest_thing: # Purge non closest things
+            chosen_index = min(closest_thing, key=closest_thing.get)
+            for idx in list(closest_thing.keys()):
+                if idx != chosen_index and idx in conds:
+                    conds.remove(idx)
+
+        closest_thing = {}
+        if 9 in conds:
+            closest_thing[9] = self.enemy_data["distance"]
+        if 10 in conds:
+            closest_thing[10] = min_wall_dist_heading
+        if 11 in conds:
+            closest_thing[11] = self.bullet_data["distance"]
+
+        if closest_thing: # Purge non closest things
+            chosen_index = min(closest_thing, key=closest_thing.get)
+            for idx in list(closest_thing.keys()):
+                if idx != chosen_index and idx in conds:
+                    conds.remove(idx)
+
+        if len(conds) == 0: # If nothing satisfied, return -1
+            return -1
+        else:
+            return max(conds) # Return the highest prority conditional
 
     def set_spawn_quad(self):
         print("X: {}".format(self.agent_data["X"]))
@@ -435,7 +469,7 @@ def loop():
             if not agent.adult and time.time() - agent.time_born >= agent.age_of_adolescence: # Becomes adult when a certain amount of seconds old, non adults mutate on self death, this is to hopefully naturally weed out agents that smash into walls
                 agent.adult = True
 
-            if agent.regeneration_pause and time.time() - agent.time_born >= agent.pause_penalty: # If pause penalty is up, we are good
+            if agent.regeneration_pause and abs(time.time() - agent.time_born) >= agent.pause_penalty: # If pause penalty is up, we are good
                 agent.regeneration_pause = False 
                 #print("Regen Penalty Over")
             
@@ -467,19 +501,17 @@ def loop():
                     print(f"At gene {agent.current_loop_idx}.")
                 # Process jump genes (control flow instructions)
                 if Evolver.is_jump_gene(gene): # If we have reached a jump gene
-                    # Check if the condition specified by this jump gene is true, if it isnt, move on to the next one in the list
-                    if agent.check_conditional(gene[1]):
-                        # Condition is true, jump to the specified loop
-                        agent.current_loop_idx = gene[1]  # Set the new loop index (same as conditional idx)
+                    jump_to = agent.check_conditionals() # Find highest prority conditional
+                    if jump_to != -1: 
+                        agent.current_loop_idx = jump_to # Jump to highest prority conditional
                         if agent.debug:
-                                print(f"Jumped to gene {gene[1]}.")
+                                print(f"Jumped to gene {agent.current_loop_idx}.")
                         agent.current_loop = agent.dec_chromosome[agent.current_loop_idx]  # Get the loop from the decoded chromosome
                         agent.current_gene_idx = 0  # Start executing from the first gene in the new loop
-                        agent.increment_gene_idx() # Get out of jump gene territory
-                    else:
-                        # Condition is false, move to the next gene in sequence
+                    else: # If no conditionals satisfied, move on to next loop
                         agent.increment_loop_idx()
                         agent.current_loop = agent.dec_chromosome[agent.current_loop_idx]  # Get the loop from the decoded chromosome
+                    agent.increment_gene_idx() # Get out of jump gene territory
                     return # Done with jump eval
 
                 # Now we have found our conditional

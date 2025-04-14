@@ -212,10 +212,11 @@ class CoreAgent(ShipData):
             self.log_error(traceback.format_exc(), 'write_soul_data')
     
     def get_kills(self):
-        # If we got plus or minus 9 pts, it means we got a kill, minus is fine because team killing counts
+        # If we got plus or minus 100 pts, it means we got a kill, minus is fine because team killing counts
         compare_score = abs(self.score - ai.selfScore())
-        if compare_score > 9.0:
-            self.num_kills += 1
+        if compare_score > 100.0:
+            if ai.selfAlive() == 1: # Only way to get + or - 100 pts while not dying is getting a kill
+                self.num_kills += 1
         self.score = ai.selfScore()
         
     def was_killed(self):        
