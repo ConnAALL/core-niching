@@ -1,11 +1,8 @@
 High Prority:
 
-1 - Randomly team kills seem to give very little minus points now,
- either I fix that or find some other way to do the get kills thing, I have an idea how
- also I can just neglect to fix this because we dont have a fitness function based on kills or anything, 
- I just wanna be able to track kills I think its neat
-2 - Thought of a way to properly implement age of adolesence, do that
-3 - Better jump conditionals, they are fine now but they need a prority system
+1 - change tracking to 8 feelers, one for each 45 degrees
+2 - change heading to 2 feelers, one for 30 degrees around the face, see pic on ur phone
+3 - add bit that makes turning and thrusting mutally exclusive in aciton gene
 
 Low Prority:
 
@@ -18,7 +15,7 @@ I think this might be an issue:
 
 
 Maybe: 
-
+1 - maybe add left right turn cond in action gene, probs bad idea tho
 
 Bugfixes:
 

@@ -13,6 +13,7 @@ import csv
 import random 
 from datetime import datetime, timezone
 import ast
+from AgentInterface import AgentInterface
 
 load_dotenv()
 DEFAULT_HEADLESS = os.getenv("DEFAULT_HEADLESS") 
@@ -30,7 +31,8 @@ class CoreAgent(ShipData):
         # Ship/bot data
         ShipData.__init__(self)
         self.bot_name = bot_name
-
+        #self.interface = AgentInterface(bot_name)
+        
         # Directories
         self.repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.data_path = os.path.join(self.repo_root, 'data')
@@ -78,10 +80,9 @@ class CoreAgent(ShipData):
         self.frames_dead = 0
         self.spawn_set = False
         self.SD = False
-        self.time_born = -1 # Time born, for age of adolescence and regeneration pause
-        self.adult = False # Is agent adult?
-        self.age_of_adolescence = 0 # This many seconds old to be an adult and not mutate on self death
-        self.regeneration_pause = False # Should I pause on self death?
+        self.time_born = -1.0 # Time born, for age of adolescence and regeneration pause
+        self.age_of_adolescence = 3 # This many seconds old to spread genes as a killer
+        self.regeneration_pause = False # Should I pause on self death? (Should start as False)
         self.pause_penalty = 0 # Pause for this many seconds after a self death
 
         # Misc 
@@ -114,7 +115,7 @@ class CoreAgent(ShipData):
             csv_file_path = os.path.join(self.data_path, f'{self.bot_name}.csv')
             with open(csv_file_path, mode='w', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file)
-                csv_writer.writerow(['Kills', 'Self Deaths', 'Cause of Death', 'Binary Chromosome'])  # Things we track
+                csv_writer.writerow(['Kills', 'Self Deaths', 'Cause of Death', 'Binary Chromosome', 'Time Born'])  # Things we track
             print(f"CSV file created successfully at {csv_file_path}")
             return csv_file_path # Give csv_file_path to use later
         except Exception as e:
@@ -195,7 +196,8 @@ class CoreAgent(ShipData):
                 self.num_kills,         # Kills
                 self.num_self_deaths,   # Self Deaths
                 cause_of_death,         # Cause of Death
-                self.bin_chromosome     # Binary Chromosome
+                self.bin_chromosome,     # Binary Chromosome
+                self.time_born           # Time Born
             ]
             
             # Write to CSV file
@@ -229,9 +231,6 @@ class CoreAgent(ShipData):
             self.num_self_deaths += 1
             agent.regeneration_pause = True # Regeneration pause penalty if self death
 
-            if not self.adult:
-                self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)  # Chance for mutation on self death, only happens if agent didnt live to adulthood
-
         if ai.selfAlive() == 0 and self.crossover_completed is False:
             killer = self.last_death[0]  # Get killer name
             killer_csv = os.path.join(self.data_path, f'{killer}.csv')  # Construct killer's CSV path
@@ -247,15 +246,20 @@ class CoreAgent(ShipData):
                             last_row = csv_rows[-1]
                             killer_chromosome_str = last_row[3]  # Binary chromosome is in column 4
                             killer_chromosome = None
+                            killer_time_of_birth = float(last_row[4])
                             try:
                                 killer_chromosome = ast.literal_eval(killer_chromosome_str)
                             except (ValueError, SyntaxError) as parse_error:
                                 print(f"Error parsing chromosome data for killer {killer}: {parse_error}")
                                 return
-                            if killer_chromosome != None:
+                            if killer_chromosome != None and time.time() - killer_time_of_birth > self.age_of_adolescence:
+                                if self.debug: 
+                                    print("Agent killed by adult, crossing over")
                                 cross_over_child = Evolver.crossover(self.bin_chromosome, killer_chromosome)
                                 self.bin_chromosome = Evolver.mutate(cross_over_child, self.MUT_RATE)
                                 self.crossover_completed = True
+                            elif self.debug:
+                                print("Agent killed by child, no crossover")
                         else:   
                             print(f"No chromosome data found for killer {killer}")
                             return
@@ -279,10 +283,8 @@ class CoreAgent(ShipData):
                         f.write(traceback_str)
                     # If we can't find the killer's data, just mutate our current chromosome
                     self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)
-                    self.write_soul_data()
         
         self.spawn_set = False
-        self.write_soul_data()
 
     def find_min_wall_angle(self, wall_feelers):
         min_wall = min(wall_feelers)
@@ -366,10 +368,10 @@ class CoreAgent(ShipData):
             self.bullet_data["distance"] < 75 and self.bullet_data["distance"] > -1,           # 11: Bullet very close (< 75 units)
 
             # Wall right ahead (tracking)
-            self.agent_data["track_feelers"][0] < 100,               # 12: Wall straight ahead (tracking)
+            self.agent_data["track_feelers"][0] < 90,               # 12: Wall straight ahead (tracking)
 
             # Wall right ahead (heading)
-            self.agent_data["head_feelers"][0] < 100               # 13: We are facing a wall (heading)
+            self.agent_data["head_feelers"][0] < 90,               # 13: We are facing a wall (heading)
             ]
 
         conds = [i for i, condition in enumerate(conditional_list) if condition] # List of all true conditionals
@@ -440,6 +442,8 @@ def loop():
             #    print(agent.dec_chromosome)
 
             if agent.spawn_set == False: # Agent is spawning in
+                agent.time_born = time.time() # For age of adolescence and regeneration pause
+                agent.write_soul_data()
                 agent.update_agent_data()
                 agent.SPAWN_QUAD = agent.set_spawn_quad()            
                 print(f"Agent {bot_name} spawned in quadrant {agent.SPAWN_QUAD}")
@@ -447,16 +451,11 @@ def loop():
                 agent.current_loop_started = False
                 agent.spawn_set = True
                 agent.SD = False
-                agent.adult = False # For age of adolescence
 
             if agent.movement_timer == -1.0: # Set timer if not set, don't start until regeneration pause is done
                 agent.movement_timer = time.time()
                 agent.SD = False
                 #print("Initial SD timer set")
-            
-            if agent.time_born == -1.0:
-                agent.time_born = time.time() # For age of adolescence and regeneration pause
-                #print("Time born set")
 
             if agent.agent_data["X"] != ai.selfX() or agent.agent_data["Y"] != ai.selfY(): # If agent is moving update time
                 agent.movement_timer = time.time()
@@ -465,9 +464,6 @@ def loop():
                 ai.selfDestruct()
                 agent.SD = True
                 print("SD'ing")
-
-            if not agent.adult and time.time() - agent.time_born >= agent.age_of_adolescence: # Becomes adult when a certain amount of seconds old, non adults mutate on self death, this is to hopefully naturally weed out agents that smash into walls
-                agent.adult = True
 
             if agent.regeneration_pause and abs(time.time() - agent.time_born) >= agent.pause_penalty: # If pause penalty is up, we are good
                 agent.regeneration_pause = False 
