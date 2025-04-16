@@ -13,7 +13,6 @@ import csv
 import random 
 from datetime import datetime, timezone
 import ast
-from AgentInterface import AgentInterface
 
 load_dotenv()
 DEFAULT_HEADLESS = os.getenv("DEFAULT_HEADLESS") 
