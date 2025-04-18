@@ -64,9 +64,9 @@ class ShipData:
         self.agent_data["heading"] = float(ai.selfHeadingDeg())
         self.agent_data["tracking"] = float(ai.selfTrackingDeg())
         
-        self.generate_feelers(10)
+        self.generate_feelers()
 
-    def generate_feelers(self, step):
+    def generate_feelers(self):
         """
         Generate sensor feelers around the ship to detect nearby objects.
         
@@ -77,20 +77,18 @@ class ShipData:
         Parameters:
             step: Angular increment in degrees between feelers (smaller = more feelers)
         """
-        # Generate feelers from angle 0 to 359 every stepth degree, range of 500
-        #print("Generating feelers")
+        # 6 feelers for heading right in front of the ship, 8 for the body all around the ship
+        # print("Generating feelers")
         self.agent_data["track_feelers"] = []
         self.agent_data["head_feelers"] = []
-        for angle in range(0, 360, step):
-            self.agent_data["track_feelers"].append(
-                ai.wallFeeler(500, int(self.agent_data["tracking"] + angle)))
-        for angle in range(0, 360, step):
+        for angle in range(-30, 30, 10): # Sort of a cone in front of the ship
             self.agent_data["head_feelers"].append(
-                ai.wallFeeler(500, int(self.agent_data["heading"] + angle)))
+                ai.wallFeeler(500, int(self.agent_data["heading"] + angle)), int(self.agent_data["heading"] + angle)) # Feeler and its angle
+        for angle in range(0, 360, 45): # 8 feelers around the ship
+            self.agent_data["track_feelers"].append((
+                ai.wallFeeler(500, int(self.agent_data["tracking"] + angle))), int(self.agent_data["heading"] + angle)) # Feeler and its angle
         self.agent_data["heading"] = float(ai.selfHeadingDeg())
         self.agent_data["tracking"] = float(ai.selfTrackingDeg())
-
-        #print(self.agent_data)
 
     def update_enemy_data(self):
         """

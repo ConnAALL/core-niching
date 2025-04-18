@@ -285,16 +285,16 @@ class CoreAgent(ShipData):
         
         self.spawn_set = False
 
-    def find_min_wall_angle(self, wall_feelers):
-        min_wall = min(wall_feelers)
-        min_index = wall_feelers.index(min_wall)
-        angle = int(10 * min_index)
+    def find_max_wall_angle(self, wall_feelers):
+        max_wall = min(wall[0] for wall in wall_feelers)
+        max_index = wall_feelers.index(max_wall)
+        angle = wall_feelers[max_index][1]
         return angle if angle < 180 else angle - 360
 
     def find_max_wall_angle(self, wall_feelers):
-        max_wall = max(wall_feelers)
+        max_wall = max(wall[0] for wall in wall_feelers)
         max_index = wall_feelers.index(max_wall)
-        angle = int(10 * max_index)
+        angle = wall_feelers[max_index][1]
         return angle if angle < 180 else angle - 360
     
     def find_direction_diff(self):
@@ -364,13 +364,8 @@ class CoreAgent(ShipData):
             min_wall_dist_heading < 100 and min_wall_dist_heading > -1,                            # 10: Wall very close (< 100 units)
 
             # Bullet distance thresholds 2
-            self.bullet_data["distance"] < 75 and self.bullet_data["distance"] > -1,           # 11: Bullet very close (< 75 units)
+            self.bullet_data["distance"] < 80 and self.bullet_data["distance"] > -1           # 11: Bullet very close (< 80 units)
 
-            # Wall right ahead (tracking)
-            self.agent_data["track_feelers"][0] < 90,               # 12: Wall straight ahead (tracking)
-
-            # Wall right ahead (heading)
-            self.agent_data["head_feelers"][0] < 90,               # 13: We are facing a wall (heading)
             ]
 
         conds = [i for i, condition in enumerate(conditional_list) if condition] # List of all true conditionals

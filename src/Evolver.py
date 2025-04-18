@@ -194,8 +194,8 @@ class Evolver():
                     shoot = bool(int(instruction_gene[1])) # Bit 2 is wether or not you should shoot
                     thrust = int(instruction_gene[2:4], 2) # Bit is the chance of thrusting (speed up for a frame), 00 = no thrust, 01 = 33% chance, 10 = 66% chance, 11 = 100% chance 
                     turn_quantity = int(instruction_gene[4:7], 2) # Make turn quantity with 3 bit integer in binary rep, bits 4-6, number 0-7
-                    turn_target = int(instruction_gene[7:], 2) # Make turn target with 3 bit integer in binary rep, bits 6-9, number 0-7 all correspond to different targets
-
+                    turn_target = int(instruction_gene[7:11], 2) # Make turn target with 3 bit integer in binary rep, bits 6-9, number 0-7 all correspond to different targets
+                    action_priority = int((instruction_gene[11])) # 0 if we prioritize thrusting over turning on this action, else 1
                     # Structure: True (indicates action gene), shoot, thrust, turn_quantity, turn_target
                     loop.append([True, shoot, thrust, turn_quantity,
                                 turn_target])
@@ -208,7 +208,7 @@ class Evolver():
         """
         Generates a new random chromosome for initial population.
         
-        A chromosome consists of 14 loops with 8 genes per loop. Each gene is 9 bits:
+        A chromosome consists of 12 loops with 8 genes per loop. Each gene is 9 bits:
         - First gene in each loop is always a jump gene (first bit = '1')
         - Other genes are action genes (first bit = '0')
         - Jump genes' bits 1-4 are the conditional index, bits 5+ are the loop number
@@ -219,11 +219,11 @@ class Evolver():
             A randomly generated chromosome
         """
         chromosome = []
-        for loop_index in range(14):
+        for loop_index in range(12):
             loop = []
             for i in range(9): 
                 gene = ""
-                for j in range(10): 
+                for j in range(11): 
                     # First gene in a loop is always a jump gene (bit 0 = '1')
                     if i == 0 and j == 0:  
                         gene += "1"

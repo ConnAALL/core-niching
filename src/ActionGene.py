@@ -24,9 +24,10 @@ class ActionGene:
             self.thrust = 1     
         self.turn_quantity = int((gene[3] + 0) * 15)     # Scaling factor for turn amount, turn amount doesnt directly correspond to degrees
         self.turn_target = gene[4]                        # Target to turn towards (0-7 encoded values)
+        self.action_priority = gene[5]                       # 0 if we prioritize thrusting over turning on this action, else 1
 
         # Execute the actions immediately upon gene creation
-        self.act()
+        self.act(gene)
 
     def turn(self):
         """
@@ -108,18 +109,26 @@ class ActionGene:
                         ai.turn(self.turn_quantity)       # Turn counter-clockwise
                         
 
-    def act(self):
+    def act(self, gene):
         """
         Execute all actions defined by this gene in the game environment.
         
-        This method:
         1. Applies thrust based on the thrust parameter
         2. Fires a shot if the shoot parameter is True
         3. Executes turning behavior based on turn parameters
         """
+        
+        # Turning and thrusting must be mutually exclusive
+        if self.thrust == 1 and gene[3] > 0 and self.action_priority == 0: 
+                ai.thrust(self.thrust)
+                return
+        elif self.thrust == 1 and gene[3] > 0 and self.action_priority == 1:
+                self.turn()
+                return
+
         # Apply thrust (0 = no thrust, 1 = thrust on)
         ai.thrust(self.thrust)
-        
+
         # Fire weapon if shoot is True
         ai.fireShot() if self.shoot else None
         
