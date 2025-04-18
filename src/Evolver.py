@@ -194,13 +194,12 @@ class Evolver():
                     shoot = bool(int(instruction_gene[1])) # Bit 2 is wether or not you should shoot
                     thrust = int(instruction_gene[2:4], 2) # Bit is the chance of thrusting (speed up for a frame), 00 = no thrust, 01 = 33% chance, 10 = 66% chance, 11 = 100% chance 
                     turn_quantity = int(instruction_gene[4:7], 2) # Make turn quantity with 3 bit integer in binary rep, bits 4-6, number 0-7
-                    turn_target = int(instruction_gene[7:11], 2) # Make turn target with 3 bit integer in binary rep, bits 6-9, number 0-7 all correspond to different targets
-                    action_priority = int((instruction_gene[11])) # 0 if we prioritize thrusting over turning on this action, else 1
-                    # Structure: True (indicates action gene), shoot, thrust, turn_quantity, turn_target
+                    turn_target = int(instruction_gene[7:10], 2) # Make turn target with 3 bit integer in binary rep, bits 6-9, number 0-7 all correspond to different targets
+                    action_priority = int((instruction_gene[10])) # 0 if we prioritize thrusting over turning on this action, else 1
+                    # Structure: True (indicates action gene), shoot, thrust, turn_quantity, turn_target, action_priority
                     loop.append([True, shoot, thrust, turn_quantity,
-                                turn_target])
+                                turn_target, action_priority])
             loops.append(loop)
-
         return loops
     
     @classmethod
@@ -213,7 +212,7 @@ class Evolver():
         - Other genes are action genes (first bit = '0')
         - Jump genes' bits 1-4 are the conditional index, bits 5+ are the loop number
         - Action genes' bits are: shoot (bit 1), thrust chance (bit 2-3), turn_quantity (bits 4-6), 
-          and turn_target (bits 7-9)
+          turn_target (bits 7-9) and action priority (bit 10)
         
         Returns:
             A randomly generated chromosome
@@ -234,8 +233,8 @@ class Evolver():
                     elif i == 0 and j == 1:  
                         # 4 bit 0 padding to format loop_index as 4-bit binary
                         gene += format(loop_index, '04b')  
-                    # For jump genes, last 5 bits are all 0's, as there is no use for them
-                    elif i == 0 and j > 5:
+                    # For jump genes, last bits are all 0's, as there is no use for them
+                    elif i == 0 and j >= 5:
                         gene += "0"
                     # For action genes, randomly set all bits after the first
                     elif i > 0:  

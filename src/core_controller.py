@@ -48,7 +48,7 @@ class CoreAgent(ShipData):
         self.initialized = False # Chromosome not yet generated
         self.MUT_RATE = 300
         self.GENES_PER_LOOP = 8
-        self.LOOPS_PER_CHROME = 14
+        self.LOOPS_PER_CHROME = 12
         self.SPAWN_QUAD = None # Spawn quad isnt really all that important anymore, but its still cool to have so why not just keep it
         self.bot_name = bot_name
         self.current_loop = None
@@ -85,8 +85,7 @@ class CoreAgent(ShipData):
         self.pause_penalty = 0 # Pause for this many seconds after a self death
 
         # Misc 
-        step = 10
-        self.generate_feelers(step) # Generate feelers at every stepth degree from 0-359 degrees
+        self.generate_feelers() # Generate initial feelers
         self.debug = debug # Set to true if we want to print out a bunch of info about the agent while its running
 
     def increment_gene_idx(self):
@@ -285,23 +284,21 @@ class CoreAgent(ShipData):
         
         self.spawn_set = False
 
-    def find_max_wall_angle(self, wall_feelers):
-        max_wall = min(wall[0] for wall in wall_feelers)
-        max_index = wall_feelers.index(max_wall)
-        angle = wall_feelers[max_index][1]
+    def find_min_wall_angle(self, wall_feelers):
+        # Pick the (distance, angle) tuple with the smallest distance
+        dist, angle = min(wall_feelers, key=lambda w: w[0])
         return angle if angle < 180 else angle - 360
 
     def find_max_wall_angle(self, wall_feelers):
-        max_wall = max(wall[0] for wall in wall_feelers)
-        max_index = wall_feelers.index(max_wall)
-        angle = wall_feelers[max_index][1]
+        # Pick the (distance, angle) tuple with the largest distance
+        dist, angle = max(wall_feelers, key=lambda w: w[0])
         return angle if angle < 180 else angle - 360
     
     def find_direction_diff(self):
-        tracking = abs(ai.selfTrackingDeg() - 180)
-        heading = abs(ai.selfHeadingDeg() - 180)
-        direction_diff = tracking - heading
-        return direction_diff
+        raw_diff = ai.selfTrackingDeg() - ai.selfHeadingDeg()
+        # Wrap into [-180, +180]
+        wrapped = (raw_diff + 180) % 360 - 180
+        return abs(wrapped)
 
     def check_conditionals(self):
         """
@@ -322,8 +319,10 @@ class CoreAgent(ShipData):
         """
 
         # Get the minimum distance to a wall from all feelers
-        min_wall_dist_heading = min(self.agent_data["head_feelers"])
-        min_wall_dist_tracking = min(self.agent_data["track_feelers"])
+        head_feeler_values = [wall[0] for wall in self.agent_data["head_feelers"]]
+        track_feeler_values = [wall[0] for wall in self.agent_data["track_feelers"]]
+        min_wall_dist_heading = min(head_feeler_values)
+        min_wall_dist_tracking = min(track_feeler_values)
         direction_diff = abs(self.find_direction_diff())
 
         if self.debug:
@@ -358,7 +357,7 @@ class CoreAgent(ShipData):
             direction_diff > 30 and direction_diff < 100,                           # 8: Ship is a bit off course (< 30 degrees)
 
             # Enemy-based conditions 2
-            self.enemy_data["distance"] < 100,             # 9: Enemy within firing distance (< 100 units)
+            self.enemy_data["distance"] < 100 and self.enemy_data["distance"] > -1,             # 9: Enemy within firing distance (< 100 units)
 
             # Wall distance thresholds 2
             min_wall_dist_heading < 100 and min_wall_dist_heading > -1,                            # 10: Wall very close (< 100 units)

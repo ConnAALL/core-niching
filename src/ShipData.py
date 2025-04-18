@@ -19,9 +19,6 @@ class ShipData:
         Returns 1 if there is a wall from the player's ship at the given angle and distance or 0 if not.
         """
 
-        # So 360 feelers from angle 0-359, all with a dist of 500, 
-        # will cover a full 360 degree radius around the ship for a distance of 500 units
-
         self.agent_data = {
             "heading": float(ai.selfHeadingDeg()), # Direction the ship is pointed
             "tracking": float(ai.selfTrackingDeg()), # The actual direction the ship is going
@@ -74,19 +71,19 @@ class ShipData:
         1. track_feelers: Based on ship's tracking direction (actual movement)
         2. head_feelers: Based on ship's heading direction (where it's pointing)
         
-        Parameters:
-            step: Angular increment in degrees between feelers (smaller = more feelers)
         """
         # 6 feelers for heading right in front of the ship, 8 for the body all around the ship
         # print("Generating feelers")
         self.agent_data["track_feelers"] = []
         self.agent_data["head_feelers"] = []
         for angle in range(-30, 30, 10): # Sort of a cone in front of the ship
-            self.agent_data["head_feelers"].append(
-                ai.wallFeeler(500, int(self.agent_data["heading"] + angle)), int(self.agent_data["heading"] + angle)) # Feeler and its angle
+            self.agent_data["head_feelers"].append((
+                ai.wallFeeler(500, int(self.agent_data["heading"] + angle)),
+                int(self.agent_data["heading"] + angle))) # Feeler and its angle
         for angle in range(0, 360, 45): # 8 feelers around the ship
             self.agent_data["track_feelers"].append((
-                ai.wallFeeler(500, int(self.agent_data["tracking"] + angle))), int(self.agent_data["heading"] + angle)) # Feeler and its angle
+                ai.wallFeeler(500, int(self.agent_data["tracking"] + angle)), 
+                int(self.agent_data["heading"] + angle))) # Feeler and its angle
         self.agent_data["heading"] = float(ai.selfHeadingDeg())
         self.agent_data["tracking"] = float(ai.selfTrackingDeg())
 
