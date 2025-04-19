@@ -250,7 +250,9 @@ class Evolver():
             new_row = []
             for gene in row:
                 if gene[0] != '1':  # Only modify if the gene does NOT start with '1'
-                    gene = gene[:3] + '111' + gene[6:]  # Set bits 3, 4, 5 to '1'
+                    gene = gene[:3] + '111' + gene[6:]  # Set bits 3, 4, 5 to '1', max turn multiplier
+                    if gene[7] != '0' or gene[8] != '0' or gene[9] != '0':
+                        gene = gene[:7] + '000' + gene[10:] # Always turn away from nearest wall
                 new_row.append(gene)
             modified.append(new_row)
         return modified

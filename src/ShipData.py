@@ -72,11 +72,11 @@ class ShipData:
         2. head_feelers: Based on ship's heading direction (where it's pointing)
         
         """
-        # 6 feelers for heading right in front of the ship, 8 for the body all around the ship
+        # 4 feelers for heading right in front of the ship, 8 for the body all around the ship
         # print("Generating feelers")
         self.agent_data["track_feelers"] = []
         self.agent_data["head_feelers"] = []
-        for angle in range(-30, 30, 10): # Sort of a cone in front of the ship
+        for angle in range(-30, 31, 15): # Sort of a cone in front of the ship
             self.agent_data["head_feelers"].append((
                 ai.wallFeeler(500, int(self.agent_data["heading"] + angle)),
                 int(self.agent_data["heading"] + angle))) # Feeler and its angle

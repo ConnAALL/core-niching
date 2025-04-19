@@ -20,7 +20,7 @@ class ActionGene:
         self.agent = agent                                # Reference to the agent executing the action
         self.shoot = gene[1]                              # Boolean - whether to fire weapon this tick        
         self.thrust = 0                                   # Thrust starts at 0
-        if gene[2] <= turn_roll and gene[2] > 0:          # If we have a chance of thrusting this frame, thrust if we roll lower or equal to our chance 
+        if gene[2] <= turn_roll and gene[2] > 0 and self.agent.agent_data["speed"] < 10:          # If we have a chance of thrusting this frame, thrust if we roll lower or equal to our chance, speed limit 10
             self.thrust = 1     
         self.turn_quantity = int((gene[3] + 0) * 15)     # Scaling factor for turn amount, turn amount doesnt directly correspond to degrees
         self.turn_target = gene[4]                        # Target to turn towards (0-7 encoded values)
@@ -47,6 +47,8 @@ class ActionGene:
             # Case 0: Turn away from the nearest wall (heading)
             case 0:
                 angle = self.agent.find_min_wall_angle(self.agent.agent_data["head_feelers"])
+                if self.agent.debug: 
+                    print(f"At turn away wall heading case, case 0, wall angle: {angle}")
                 if angle > 0:
                     ai.turn(-1 * self.turn_quantity)  # Turn clockwise
                 elif angle < 0:
@@ -55,6 +57,8 @@ class ActionGene:
             # Case 1: Turn away from the nearest wall (tracking)
             case 1:
                 angle = self.agent.find_min_wall_angle(self.agent.agent_data["track_feelers"])
+                if self.agent.debug: 
+                    print(f"At turn away wall tracking case, case 1, wall angle: {angle}")
                 if angle > 0:
                     ai.turn(-1 * self.turn_quantity)  # Turn clockwise
                 elif angle < 0:
@@ -62,6 +66,8 @@ class ActionGene:
                     
             # Case 2: Turn toward tracking
             case 2:
+                if self.agent.debug: 
+                    print("At turn toward tracking case, case 2")
                 angle = self.agent.find_direction_diff()
                 if angle < 0:
                     ai.turn(-1 * self.turn_quantity)  # Turn clockwise
@@ -70,6 +76,8 @@ class ActionGene:
                     
             # Case 3: Turn against tracking
             case 3:
+                if self.agent.debug: 
+                    print("At turn against tracking case, case 3")
                 angle = self.agent.find_direction_diff()
                 if angle > 0:
                     ai.turn(-1 * self.turn_quantity)  # Turn clockwise
@@ -78,6 +86,8 @@ class ActionGene:
                     
             # Case 4: Turn toward the nearest enemy ship
             case 4:
+                if self.agent.debug: 
+                    print("At turn toward enemy ship case, case 4")
                 if self.agent.enemy_data["distance"] is not None:
                     if self.agent.enemy_data["angle_to_enemy"] < 0:
                         ai.turn(-1 * self.turn_quantity)  # Turn clockwise
@@ -86,6 +96,8 @@ class ActionGene:
                         
             # Case 5: Turn away from the nearest enemy ship
             case 5:
+                if self.agent.debug: 
+                    print("At turn away from enemy ship case, case 5")
                 if self.agent.enemy_data["distance"] is not None:
                     if self.agent.enemy_data["angle_to_enemy"] > 0:
                         ai.turn(-1 * self.turn_quantity)  # Turn clockwise
@@ -94,6 +106,8 @@ class ActionGene:
 
             # Case 6: Turn toward the nearest bullet
             case 6:
+                if self.agent.debug: 
+                    print("At turn toward nearest bullet case, case 6")
                 if self.agent.bullet_data["X"] != -1:  # Check if bullet is detected
                     if self.agent.bullet_data["angle_to_shot"] < 0:
                         ai.turn(-1 * self.turn_quantity)  # Turn clockwise
@@ -102,6 +116,8 @@ class ActionGene:
                         
             # Case 7: Turn away from the nearest bullet
             case 7:
+                if self.agent.debug: 
+                    print("At turn away from nearest bullet case, case 7")
                 if self.agent.bullet_data["X"] != -1:  # Check if bullet is detected
                     if self.agent.bullet_data["angle_to_shot"] > 0:
                         ai.turn(-1 * self.turn_quantity)  # Turn clockwise

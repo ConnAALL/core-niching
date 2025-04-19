@@ -340,27 +340,27 @@ class CoreAgent(ShipData):
             self.agent_data["speed"] == 0,                  # 1: Ship is not moving
             
             # Enemy-based conditions 1
-            self.enemy_data["distance"] < 200 and self.enemy_data["distance"] > 100,             # 2: Enemy far but still visable (< 200 units)
+            self.enemy_data["distance"] < 250 and self.enemy_data["distance"] > 150,             # 2: Enemy far but still visable (< 250 units)
 
             # Wall distance thresholds 1
-            min_wall_dist_heading < 200 and min_wall_dist_heading > 100,                           # 3: Wall sort of close (< 200 units)
+            min_wall_dist_heading < 300 and min_wall_dist_heading > 150,                           # 3: Wall sort of close (< 300 units)
 
             # Bullet distance thresholds 1
-            self.bullet_data["distance"] < 150 and self.bullet_data["distance"] > 75,             # 4: Bullet sort of close (< 150 units)
+            self.bullet_data["distance"] < 150 and self.bullet_data["distance"] > 80,             # 4: Bullet sort of close (< 150 units)
 
             # Speed-based conditions
-            self.agent_data["speed"] < 5,                  # 5: Speed too low (< 5)
-            self.agent_data["speed"] > 12,                 # 6: Speed too high (> 12)
+            self.agent_data["speed"] < 3,                  # 5: Speed too low (< 3)
+            self.agent_data["speed"] > 10,                 # 6: Speed too high (> 10)
 
             # Difference in tracking and heading thresholds 
             direction_diff > 100,                          # 7: Ship is very off course (< 100 degrees)
             direction_diff > 30 and direction_diff < 100,                           # 8: Ship is a bit off course (< 30 degrees)
 
             # Enemy-based conditions 2
-            self.enemy_data["distance"] < 100 and self.enemy_data["distance"] > -1,             # 9: Enemy within firing distance (< 100 units)
+            self.enemy_data["distance"] < 150 and self.enemy_data["distance"] > -1,             # 9: Enemy within firing distance (< 100 units)
 
             # Wall distance thresholds 2
-            min_wall_dist_heading < 100 and min_wall_dist_heading > -1,                            # 10: Wall very close (< 100 units)
+            min_wall_dist_heading < 150 and min_wall_dist_heading > -1,                            # 10: Wall very close (< 100 units)
 
             # Bullet distance thresholds 2
             self.bullet_data["distance"] < 80 and self.bullet_data["distance"] > -1           # 11: Bullet very close (< 80 units)
