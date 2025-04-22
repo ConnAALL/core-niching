@@ -63,7 +63,7 @@ class ActionGene:
             # Case 1: Turn away from the nearest wall (tracking)
             case 1:
                 angle = self.agent.find_min_wall_angle(self.agent.agent_data["track_feelers"])
-                max_wall_angle = self.agent.find_max_wall_angle(self.agent_data["track_feelers"]) # Turn towards farthest wall as a failsafe
+                max_wall_angle = self.agent.find_max_wall_angle(self.agent.agent_data["track_feelers"]) # Turn towards farthest wall as a failsafe
                 if self.agent.debug: 
                     print(f"At turn away wall tracking case, case 1, wall angle: {angle}")
                 if angle > 30:
