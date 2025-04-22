@@ -76,11 +76,13 @@ class ShipData:
         # print("Generating feelers")
         self.agent_data["track_feelers"] = []
         self.agent_data["head_feelers"] = []
-        for angle in range(-30, 31, 15): # Sort of a cone in front of the ship
+        #for angle in range(-30, 31, 15): # Sort of a cone in front of the ship
+        for angle in range(0, 360, 10):  # 360 degree coverage
             self.agent_data["head_feelers"].append((
                 ai.wallFeeler(500, int(self.agent_data["heading"] + angle)),
                 int(self.agent_data["heading"] + angle))) # Feeler and its angle
-        for angle in range(0, 360, 45): # 8 feelers around the ship
+        #for angle in range(0, 360, 45): # 8 feelers around the ship
+        for angle in range(0, 360, 10): # 360 degree coverage
             self.agent_data["track_feelers"].append((
                 ai.wallFeeler(500, int(self.agent_data["tracking"] + angle)), 
                 int(self.agent_data["heading"] + angle))) # Feeler and its angle

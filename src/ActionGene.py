@@ -47,19 +47,18 @@ class ActionGene:
             # Case 0: Turn away from the nearest wall (heading)
             case 0:
                 angle = self.agent.find_min_wall_angle(self.agent.agent_data["head_feelers"])
-                max_wall_angle = self.agent.find_max_wall_angle(self.agent_data["track_feelers"]) # Turn towards farthest wall as a failsafe
+                max_wall_angle = self.agent.find_max_wall_angle(self.agent.agent_data["track_feelers"]) # Turn towards farthest wall as a failsafe
                 if self.agent.debug: 
                     print(f"At turn away wall heading case, case 0, wall angle: {angle}")
-                if angle > 0:
+                if angle > 30:
                     ai.turn(-1 * self.turn_quantity)  # Turn clockwise
-                elif angle < 0:
+                elif angle < -30:
                     ai.turn(self.turn_quantity)       # Turn counter-clockwise
-                elif angle == 0 and max_wall_angle > 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
+                elif 30 > angle > -30 and max_wall_angle > 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
                     ai.turn(self.turn_quantity)
-                elif angle == 0 and max_wall_angle < 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
+                elif 30 > angle > -30 and max_wall_angle < 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
                     ai.turn(self.turn_quantity * -1)
-                else: # Otherwise just turn right
-                    ai.turnRight(self.turn_quantity)
+
                     
             # Case 1: Turn away from the nearest wall (tracking)
             case 1:
@@ -67,17 +66,15 @@ class ActionGene:
                 max_wall_angle = self.agent.find_max_wall_angle(self.agent_data["track_feelers"]) # Turn towards farthest wall as a failsafe
                 if self.agent.debug: 
                     print(f"At turn away wall tracking case, case 1, wall angle: {angle}")
-                if angle > 0:
+                if angle > 30:
                     ai.turn(-1 * self.turn_quantity)  # Turn clockwise
-                elif angle < 0:
+                elif angle < -30:
                     ai.turn(self.turn_quantity)       # Turn counter-clockwise
-                elif angle == 0 and max_wall_angle > 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
+                elif 30 > angle > -30 and max_wall_angle > 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
                     ai.turn(self.turn_quantity)
-                elif angle == 0 and max_wall_angle < 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
+                elif 30 > angle > -30 and max_wall_angle < 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
                     ai.turn(self.turn_quantity * -1)
-                else: # Otherwise just turn right
-                    ai.turnRight(self.turn_quantity)
-                    
+
             # Case 2: Turn toward tracking
             case 2:
                 if self.agent.debug: 
