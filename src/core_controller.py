@@ -65,6 +65,7 @@ class CoreAgent(ShipData):
         # Initial score
         self.num_kills = 0
         self.num_self_deaths = 0
+        self.num_deaths = 0
         self.score = 0
         self.movement_timer = -1.0
         self.chromosome_iteration = 0
@@ -113,7 +114,7 @@ class CoreAgent(ShipData):
             csv_file_path = os.path.join(self.data_path, f'{self.bot_name}.csv')
             with open(csv_file_path, mode='w', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file)
-                csv_writer.writerow(['Kills', 'Self Deaths', 'Cause of Death', 'Binary Chromosome', 'Time Born'])  # Things we track
+                csv_writer.writerow(['Kills', 'Self Deaths', 'Total Deaths', 'Cause of Death', 'Binary Chromosome', 'Time Born'])  # Things we track
             print(f"CSV file created successfully at {csv_file_path}")
             return csv_file_path # Give csv_file_path to use later
         except Exception as e:
@@ -193,6 +194,7 @@ class CoreAgent(ShipData):
             data_row = [
                 self.num_kills,         # Kills
                 self.num_self_deaths,   # Self Deaths
+                self.num_deaths,        # Total Deaths
                 cause_of_death,         # Cause of Death
                 self.bin_chromosome,     # Binary Chromosome
                 self.time_born           # Time Born
@@ -232,7 +234,8 @@ class CoreAgent(ShipData):
         if ai.selfAlive() == 0 and self.crossover_completed is False:
             killer = self.last_death[0]  # Get killer name
             killer_csv = os.path.join(self.data_path, f'{killer}.csv')  # Construct killer's CSV path
-            
+            self.num_deaths += 1
+
             if killer != 'null':
                 print(f"{killer} killed {self.bot_name}")
                 try:
@@ -242,9 +245,9 @@ class CoreAgent(ShipData):
                         csv_rows = list(csv.reader(csvfile))
                         if len(csv_rows) > 1:  # Make sure we have data rows beyond the header
                             last_row = csv_rows[-1]
-                            killer_chromosome_str = last_row[3]  # Binary chromosome is in column 4
+                            killer_chromosome_str = last_row[4]  # Binary chromosome is in column 5
                             killer_chromosome = None
-                            killer_time_of_birth = float(last_row[4])
+                            killer_time_of_birth = float(last_row[5])
                             try:
                                 killer_chromosome = ast.literal_eval(killer_chromosome_str)
                             except (ValueError, SyntaxError) as parse_error:

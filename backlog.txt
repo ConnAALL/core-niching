@@ -1,21 +1,17 @@
 High Prority:
 
-1 - change tracking to 8 feelers, one for each 45 degrees
-2 - change heading to 2 feelers, one for 30 degrees around the face, see pic on ur phone
-3 - add bit that makes turning and thrusting mutally exclusive in aciton gene
+1 - add "testing_fitness.py" file, we can test chromosomes by pulling the chromosome from an existing csv that we place in a "testing fitness"
+folder, we then log the fitness to a fitness logging csv in a different folder, that folder isnt version control tracked, instead of logging on birth,
+log every 1 minute, so we can compare agents performance on a graph. Before logging but after pulling the chromosome, check if we have 
+already logged for this test, if so pull the time, so we can start running again if the run has stopped. 
+2 - make an sh file using testing fitness that sets up a fitness competition between niched and not niched agents.
 
 Low Prority:
 
-1 - Make it so that when a new server is started, make a new folder to store the data from this new run in
-2 - Have everything logged into a master csv every 60 seconds for a cool graph at the end
-3 - Need to fix storage, the linux systems here dont have a lot of storage, so I need to start saving stuff to temp and then taking the data and putting it on my usbs before they get wiped. Also I can def write less stuff to the CSVS.
-4 - before project goes public, give tools and instructions for people to compile xpilots mod on their own device
-5 - a good way to test agents fitness is in the last paragraph in 6.0 in the core journal paper
 I think this might be an issue:
 
 
 Maybe: 
-1 - maybe add left right turn cond in action gene, probs bad idea tho
 
 Bugfixes:
 
