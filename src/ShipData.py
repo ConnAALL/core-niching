@@ -19,6 +19,9 @@ class ShipData:
         Returns 1 if there is a wall from the player's ship at the given angle and distance or 0 if not.
         """
 
+        self.ff_on_off = True
+        self.team = ai.selfTeam() # Get players team
+
         self.agent_data = {
             "heading": float(ai.selfHeadingDeg()), # Direction the ship is pointed
             "tracking": float(ai.selfTrackingDeg()), # The actual direction the ship is going
@@ -101,17 +104,8 @@ class ShipData:
         4. Sets default values (-1) if no enemy is detected
         """
         closest_ship_id = int(ai.closestShipId())
-        if closest_ship_id != -1:
-            # Enemy ship detected, update all enemy data
-            self.enemy_data["distance"] = float(ai.enemyDistanceId(closest_ship_id))
-            self.enemy_data["X"] = int(ai.screenEnemyXId(closest_ship_id))
-            self.enemy_data["Y"] = int(ai.screenEnemyYId(closest_ship_id))
-            self.enemy_data["speed"] = float(ai.enemySpeedId(closest_ship_id))
-            self.enemy_data["heading"] = float(ai.enemyHeadingDegId(closest_ship_id))
-            self.enemy_data["angle_to_enemy"] = int(self.find_angle())
-            self.enemy_data["direction"] = self.get_enemy_dir()
-            self.enemy_data["name"] = ai.enemyNameId(closest_ship_id)
-        else:
+        skip_friend = ai.enemyTeamId(closest_ship_id) == self.team and not self.ff_on_off # Skip friends if friendly fire is off
+        if closest_ship_id == -1 or skip_friend:
             # No enemy ship detected, set default values
             self.enemy_data["distance"] = -1
             self.enemy_data["X"] = -1
@@ -121,6 +115,17 @@ class ShipData:
             self.enemy_data["angle_to_enemy"] = -1
             self.enemy_data["direction"] = -1
             self.enemy_data["name"] = "None"
+        else:
+            # Enemy ship detected, update all enemy data
+            self.enemy_data["distance"] = float(ai.enemyDistanceId(closest_ship_id))
+            self.enemy_data["X"] = int(ai.screenEnemyXId(closest_ship_id))
+            self.enemy_data["Y"] = int(ai.screenEnemyYId(closest_ship_id))
+            self.enemy_data["speed"] = float(ai.enemySpeedId(closest_ship_id))
+            self.enemy_data["heading"] = float(ai.enemyHeadingDegId(closest_ship_id))
+            self.enemy_data["angle_to_enemy"] = int(self.find_angle())
+            self.enemy_data["direction"] = self.get_enemy_dir()
+            self.enemy_data["name"] = ai.enemyNameId(closest_ship_id)
+
 
     def update_bullet_data(self):
         """
@@ -232,3 +237,11 @@ class ShipData:
         elif self.enemy_data["distance"] and x_dist_to_enemy > 0 and y_dist_to_enemy < 0 and not wall_pre_enemy:
             direction = 4  # Bottom-right quadrant
         return direction
+    
+    def friendly_fire(self, ff):
+        if not ff:
+            print("Got it, no friendly fire!")
+            self.ff_on_off = False
+        if ff:
+            print("Got it, friendly fire is on!")
+            self.ff_on_off = True

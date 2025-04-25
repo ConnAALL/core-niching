@@ -30,7 +30,6 @@ class CoreAgent(ShipData):
         # Ship/bot data
         ShipData.__init__(self)
         self.bot_name = bot_name
-        #self.interface = AgentInterface(bot_name)
         
         # Directories
         self.repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -88,6 +87,7 @@ class CoreAgent(ShipData):
         # Misc 
         self.generate_feelers() # Generate initial feelers
         self.debug = debug # Set to true if we want to print out a bunch of info about the agent while its running
+        self.friendly_fire(ff = True) # Set to false if we want to ignore ships on our team
 
     def increment_gene_idx(self):
         reset = True if self.GENES_PER_LOOP == self.current_gene_idx + 1 else False # Return true if we looped around

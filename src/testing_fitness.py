@@ -30,7 +30,6 @@ class CoreAgent(ShipData):
         # Ship/bot data
         ShipData.__init__(self)
         self.bot_name = bot_name
-        #self.interface = AgentInterface(bot_name)
         
         # Directories
         self.repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -88,6 +87,7 @@ class CoreAgent(ShipData):
         # Misc 
         self.generate_feelers() # Generate initial feelers
         self.debug = debug # Set to true if we want to print out a bunch of info about the agent while its running
+        self.friendly_fire(ff = False) # Set to false if we want to ignore ships on our team
 
     def increment_gene_idx(self):
         reset = True if self.GENES_PER_LOOP == self.current_gene_idx + 1 else False # Return true if we looped around
@@ -230,57 +230,7 @@ class CoreAgent(ShipData):
         if "null" in self.last_death:  # If ran into wall, dont crossover, just mutate
             print(f"Agent {self.bot_name} ran into wall (or self destructed some other way)")
             self.num_self_deaths += 1
-            agent.regeneration_pause = True # Regeneration pause penalty if self death
-
-        if ai.selfAlive() == 0 and self.crossover_completed is False:
-            killer = self.last_death[0]  # Get killer name
-            killer_csv = os.path.join(self.data_path, f'{killer}.csv')  # Construct killer's CSV path
             self.num_deaths += 1
-
-            if killer != 'null':
-                print(f"{killer} killed {self.bot_name}")
-                try:
-                    # Read the killer's CSV file to get their latest chromosome
-                    with open(killer_csv, 'r', newline='') as csvfile:
-                        # Read all rows to get the last one
-                        csv_rows = list(csv.reader(csvfile))
-                        if len(csv_rows) > 1:  # Make sure we have data rows beyond the header
-                            last_row = csv_rows[-1]
-                            killer_chromosome_str = last_row[4]  # Binary chromosome is in column 5
-                            killer_chromosome = None
-                            killer_time_of_birth = float(last_row[5])
-                            try:
-                                killer_chromosome = ast.literal_eval(killer_chromosome_str)
-                            except (ValueError, SyntaxError) as parse_error:
-                                print(f"Error parsing chromosome data for killer {killer}: {parse_error}")
-                                return
-                            if killer_chromosome != None and time.time() - killer_time_of_birth > self.age_of_adolescence:
-                                if self.debug: 
-                                    print("Agent killed by adult, crossing over")
-
-                            elif self.debug:
-                                print("Agent killed by child, no crossover")
-                        else:   
-                            print(f"No chromosome data found for killer {killer}")
-                            return
-                        
-                except Exception as e:
-                    print(f"Error processing killer data: {e}")
-                    traceback_str = traceback.format_exc()
-                    current_time = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-                    fs = os.path.join(self.repo_root, 'tracebacks', f'killer_data_error_{self.bot_name}.txt')
-                    with open(fs, "a") as f:
-                        f.write(f"Error processing killer {killer} data for agent {self.bot_name} at {current_time}\n")
-                        f.write(traceback_str)
-
-                except FileNotFoundError:
-                    print(f"Could not find CSV file for killer {killer}")
-                    traceback_str = traceback.format_exc()
-                    current_time = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-                    fs = os.path.join(self.repo_root, 'tracebacks', f'CSV_NOT_FOUND_{killer}.txt')
-                    with open(fs, "a") as f:
-                        f.write(f"Could not find CSV file for killer {killer} at {current_time}\n")
-                        f.write(traceback_str)
         
         self.spawn_set = False
 
@@ -330,7 +280,7 @@ class CoreAgent(ShipData):
             print(f"Closest wall (heading) is {min_wall_dist_heading} away")
             print(f"Closest wall (tracking) is {min_wall_dist_tracking} away")
             print(f"Closest bullet is {self.bullet_data['distance']} away")
-            print(f"Closest enemy is {self.enemy_data['distance']} away")
+            print(f"Closest enemy is {self.enemy_data['name']} and is {self.enemy_data['distance']} away")
             print(f"Speed is {self.agent_data['speed']}")
 
         # List of all possible conditions that can be checked
