@@ -34,7 +34,7 @@ class CoreAgent(ShipData):
         
         # Directories
         self.repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.data_path = os.path.join(self.repo_root, 'data')
+        self.data_path = os.path.join(self.repo_root, 'testing fitnesses')
         os.makedirs(self.data_path, exist_ok=True)
         self.error_log_path = os.path.join(self.repo_root, 'tracebacks')
         os.makedirs(self.error_log_path, exist_ok=True)
@@ -140,14 +140,13 @@ class CoreAgent(ShipData):
                 csv_rows = list(csv.reader(csvfile))
                 if len(csv_rows) > 1:  # If we have data rows beyond header
                     last_row = csv_rows[-1]
-                    last_chromosome_str = last_row[3]  # Binary chromosome is in column 4
+                    last_chromosome_str = last_row[4]  # Binary chromosome is in column 5
                     try:
                         last_chromosome = ast.literal_eval(last_chromosome_str)
                         print(f"Found existing chromosome for {self.bot_name}")
                         return last_chromosome
                     except (ValueError, SyntaxError):
                         print(f"Could not parse existing chromosome, generating new one")
-                        self.bin_chromosome = Evolver.generate_chromosome()
 
     def process_server_feed(self):
         self.feed_history = []
@@ -225,6 +224,8 @@ class CoreAgent(ShipData):
         
         print(f"Last death is {self.last_death}")
         print(f"Current Score: {self.score}")
+        
+        self.update_score() # Update score to current score, because score is used for kill tracking
 
         if "null" in self.last_death:  # If ran into wall, dont crossover, just mutate
             print(f"Agent {self.bot_name} ran into wall (or self destructed some other way)")
@@ -256,9 +257,7 @@ class CoreAgent(ShipData):
                             if killer_chromosome != None and time.time() - killer_time_of_birth > self.age_of_adolescence:
                                 if self.debug: 
                                     print("Agent killed by adult, crossing over")
-                                cross_over_child = Evolver.crossover(self.bin_chromosome, killer_chromosome)
-                                self.bin_chromosome = Evolver.mutate(cross_over_child, self.MUT_RATE)
-                                self.crossover_completed = True
+
                             elif self.debug:
                                 print("Agent killed by child, no crossover")
                         else:   
@@ -282,8 +281,6 @@ class CoreAgent(ShipData):
                     with open(fs, "a") as f:
                         f.write(f"Could not find CSV file for killer {killer} at {current_time}\n")
                         f.write(traceback_str)
-                    # If we can't find the killer's data, just mutate our current chromosome
-                    self.bin_chromosome = Evolver.mutate(self.bin_chromosome, self.MUT_RATE)
         
         self.spawn_set = False
 
@@ -542,8 +539,6 @@ def loop():
                 print(error_msg)
                 print(f"Full error log written to: {error_log_path}")
                 
-                # Generate new chromosome as fallback
-                agent.bin_chromosome = Evolver.generate_chromosome()
                 
         else: # You died :(
             ai.thrust(0) # Make sure the thrust key is turned off
