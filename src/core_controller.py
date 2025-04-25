@@ -225,6 +225,8 @@ class CoreAgent(ShipData):
         
         print(f"Last death is {self.last_death}")
         print(f"Current Score: {self.score}")
+        
+        self.update_score() # Update score to current score, because score is used for kill tracking
 
         if "null" in self.last_death:  # If ran into wall, dont crossover, just mutate
             print(f"Agent {self.bot_name} ran into wall (or self destructed some other way)")
