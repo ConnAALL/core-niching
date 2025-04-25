@@ -335,7 +335,7 @@ class CoreAgent(ShipData):
             print(f"Closest wall (heading) is {min_wall_dist_heading} away")
             print(f"Closest wall (tracking) is {min_wall_dist_tracking} away")
             print(f"Closest bullet is {self.bullet_data['distance']} away")
-            print(f"Closest enemy is {self.enemy_data['distance']} away")
+            print(f"Closest enemy is {self.enemy_data['name']} and is {self.enemy_data['distance']} away")
             print(f"Speed is {self.agent_data['speed']}")
 
         # List of all possible conditions that can be checked

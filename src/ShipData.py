@@ -37,7 +37,8 @@ class ShipData:
             "speed": -1,           # Speed of enemy ship
             "heading": -1,         # Heading direction of enemy ship in degrees
             "distance": -1,        # Distance to enemy ship
-            "angle_to_enemy": -1   # Angle between agent's heading and enemy position
+            "angle_to_enemy": -1,   # Angle between agent's heading and enemy position
+            "name": "None"
         }
 
         # Structure to store information about the nearest bullet/projectile
@@ -109,6 +110,7 @@ class ShipData:
             self.enemy_data["heading"] = float(ai.enemyHeadingDegId(closest_ship_id))
             self.enemy_data["angle_to_enemy"] = int(self.find_angle())
             self.enemy_data["direction"] = self.get_enemy_dir()
+            self.enemy_data["name"] = ai.enemyNameId(closest_ship_id)
         else:
             # No enemy ship detected, set default values
             self.enemy_data["distance"] = -1
@@ -118,6 +120,7 @@ class ShipData:
             self.enemy_data["heading"] = -1
             self.enemy_data["angle_to_enemy"] = -1
             self.enemy_data["direction"] = -1
+            self.enemy_data["name"] = "None"
 
     def update_bullet_data(self):
         """
