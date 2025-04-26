@@ -3,7 +3,7 @@
 SCRIPT_DIR=$(dirname "$0")
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 # Set the number of instances you want to run
-num_instances_per_team=16;
+num_instances_per_team=15;
 
 # Loop from 1 to num_instances_per_team-1
 for ((j = 1; j <= 4; j++)); do	

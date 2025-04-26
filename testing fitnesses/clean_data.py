@@ -2,7 +2,7 @@
 """
 clean_current_csvs.py
 
-1. Delete any CSV named CA_Qn_m.csv with m > 16
+1. Delete any CSV named CA_Qn_m.csv with m > 15
 2. For the rest:
    - Read with csv.reader (so quoted commas stay inside a single field)
    - Take only the last row
@@ -24,12 +24,12 @@ def clean():
     pattern = re.compile(r'^CA_Q\d+_(\d+)\.csv$', re.IGNORECASE)
 
     for csv_path in cwd.glob("*.csv"):
-        # 1. Delete any CA_Qn_m with m>16
+        # 1. Delete any CA_Qn_m with m>15
         m = pattern.match(csv_path.name)
         if m:
-            if int(m.group(1)) > 16:
+            if int(m.group(1)) > 15:
                 csv_path.unlink()
-                print(f"Deleted {csv_path.name} (m={m.group(1)} > 16)")
+                print(f"Deleted {csv_path.name} (m={m.group(1)} > 15)")
                 continue
 
         # 2. Read all rows properly
