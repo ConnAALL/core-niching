@@ -5,7 +5,7 @@ clean_current_csvs.py
 For every .csv in the current directory:
  1. Read with csv.reader (so quoted commas stay inside a single field)
  2. Take only the last row
- 3. Zero out the first three fields of that row
+ 3. Zero out the first four and last fields of that row
  4. Write the given header, then that single row
 """
 
@@ -15,7 +15,7 @@ from pathlib import Path
 def clean():
     cwd = Path('.')
     header = ['Kills', 'Self Deaths', 'Total Deaths',
-              'Cause of Death', 'Binary Chromosome', 'Time Born']
+              'Cause of Last Death', 'Binary Chromosome', 'Time Elapsed']
 
     for csv_path in cwd.glob("*.csv"):
         # 1. Read in all rows properly
@@ -30,9 +30,17 @@ def clean():
         # 2. Grab the last row
         last_row = rows[-1]
 
-        # 3. Zero out the first three columns (if they exist)
+        # 3. Zero out the first three columns 
         for i in range(min(3, len(last_row))):
             last_row[i] = '0'
+
+        # 3b. Set the 4th column ("Cause of Death") to "None"
+        if len(last_row) > 3:
+            last_row[3] = 'None'
+
+        # 3c. Zero out the last column 
+        if len(last_row) > 0:
+            last_row[-1] = '0'
 
         # 4. Write header + modified row
         with csv_path.open('w', newline='', encoding='utf-8') as outfile:

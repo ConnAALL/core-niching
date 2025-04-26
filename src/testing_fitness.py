@@ -30,7 +30,10 @@ class CoreAgent(ShipData):
         # Ship/bot data
         ShipData.__init__(self)
         self.bot_name = bot_name
-        
+        self.run_start_time = time.time() # Unique to testing fitness, we want to log kd each minute instead of on birth
+        self.time_elapsed = 0 # Total time elapsed since run started
+        self.logged = False # Avoid multiple logs per second
+
         # Directories
         self.repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.data_path = os.path.join(self.repo_root, 'testing fitnesses')
@@ -196,7 +199,7 @@ class CoreAgent(ShipData):
                 self.num_deaths,        # Total Deaths
                 cause_of_death,         # Cause of Death
                 self.bin_chromosome,     # Binary Chromosome
-                self.time_born           # Time Born
+                self.time_elapsed + 1         # Time Since we Started
             ]
             
             # Write to CSV file
@@ -377,6 +380,14 @@ def loop():
     
     if agent is None:
         agent = CoreAgent(bot_name)
+    agent.time_elapsed = int(time.time() - agent.run_start_time)
+    print(agent.time_elapsed % 60)
+
+    if agent.time_elapsed % 60 != 59:
+        agent.logged = False
+    elif not agent.logged: # 60 seconds has passed, log
+        agent.write_soul_data()
+        agent.logged = True  # Avoid multiple logs on this second
 
     try:
         if ai.selfAlive() == 1:
@@ -386,7 +397,6 @@ def loop():
 
             if agent.spawn_set == False: # Agent is spawning in
                 agent.time_born = time.time() # For age of adolescence and regeneration pause
-                agent.write_soul_data()
                 agent.update_agent_data()
                 agent.SPAWN_QUAD = agent.set_spawn_quad()            
                 print(f"Agent {bot_name} spawned in quadrant {agent.SPAWN_QUAD}")
