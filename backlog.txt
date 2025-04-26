@@ -1,10 +1,5 @@
 High Prority:
 
-1 - add "testing_fitness.py" file, we can test chromosomes by pulling the chromosome from an existing csv that we place in a "testing fitness"
-folder, we then log the fitness to a fitness logging csv in a different folder, that folder isnt version control tracked, instead of logging on birth,
-log every 1 minute, so we can compare agents performance on a graph. Before logging but after pulling the chromosome, check if we have 
-already logged for this test, if so pull the time, so we can start running again if the run has stopped. 
-2 - make an sh file using testing fitness that sets up a fitness competition between niched and not niched agents.
 
 Low Prority:
 

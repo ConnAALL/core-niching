@@ -228,7 +228,7 @@ class CoreAgent(ShipData):
         
         self.update_score() # Update score to current score, because score is used for kill tracking
 
-        if "null" in self.last_death:  # If ran into wall, dont crossover, just mutate
+        if "null" in self.last_death: 
             print(f"Agent {self.bot_name} ran into wall (or self destructed some other way)")
             self.num_self_deaths += 1
             agent.regeneration_pause = True # Regeneration pause penalty if self death

@@ -230,7 +230,7 @@ class CoreAgent(ShipData):
         
         self.update_score() # Update score to current score, because score is used for kill tracking
 
-        if "null" in self.last_death:  # If ran into wall, dont crossover, just mutate
+        if "null" in self.last_death: 
             print(f"Agent {self.bot_name} ran into wall (or self destructed some other way)")
             self.num_self_deaths += 1
             self.num_deaths += 1
@@ -381,7 +381,6 @@ def loop():
     if agent is None:
         agent = CoreAgent(bot_name)
     agent.time_elapsed = int(time.time() - agent.run_start_time)
-    print(agent.time_elapsed % 60)
 
     if agent.time_elapsed % 60 != 59:
         agent.logged = False
