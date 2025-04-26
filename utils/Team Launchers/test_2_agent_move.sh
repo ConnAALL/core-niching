@@ -8,7 +8,7 @@ REPO_DIR=$(dirname "$(dirname "$SCRIPT_DIR")")
 # Launch one agent
 for ((j = 1; j <= 2; j++)); do	
 	python3 "$REPO_DIR/src/pretrained.py" "test_"$j "headless_false" 3 1&
-	sleep 0.75
+	sleep 1;
 done
 wait;
 

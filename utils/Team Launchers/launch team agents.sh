@@ -12,7 +12,7 @@ for ((j = 1; j <= 4; j++)); do
 	for ((i = 1; i <= num_instances_per_team-1; i++)); do
 	    echo "Running instance $i"
 	    python3 "$REPO_DIR/src/core_controller.py" "Q"$j"_"$i "headless_true" $j&
-	    sleep 0.75;
+	    sleep 1;
 	    # Note that headless MUST be false if agents have limited lives
 	done
 done

@@ -10,12 +10,12 @@ not_headless=1
 # Launch not headless agents 
 for ((i = 1; i <= not_headless; i++)); do	
 	python3 "$REPO_DIR/src/pretrained.py" "pre_"$i "headless_false" 3&
-	sleep 0.75
+	sleep 1;
 done
 sleep 1
 for ((j = not_headless; j <= num_agents; j++)); do	
 	python3 "$REPO_DIR/src/pretrained.py" "pre_"$j "headless_true" 3&
-	sleep 0.75
+	sleep 1;
 done
 wait;
 
