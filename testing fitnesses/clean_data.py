@@ -24,10 +24,10 @@ def clean():
     pattern = re.compile(r'^CA_Q\d+_(\d+)\.csv$', re.IGNORECASE)
 
     for csv_path in cwd.glob("*.csv"):
-        # 1. Delete any CA_Qn_m with m>15
+        # 1. Delete any CA_Qn_m with m>30
         m = pattern.match(csv_path.name)
         if m:
-            if int(m.group(1)) > 15:
+            if int(m.group(1)) > 30:
                 csv_path.unlink()
                 print(f"Deleted {csv_path.name} (m={m.group(1)} > 15)")
                 continue
