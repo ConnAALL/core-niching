@@ -16,18 +16,18 @@ for ((j = 1; j <= 4; j++)); do
 	for ((i = 1; i <= split-1; i++)); do
 	    echo "Running instance $i"
 	    python3 "$REPO_DIR/src/testing_fitness.py" "Q"$j"_"$i "headless_true" $j&
-	    sleep 0.75;
+	    sleep 1.5;
 	done
 done
 
 for ((j = 1; j <= 4; j++)); do	
-    	k=$(( (j % 4) + 1 ))
-	k_enemy=$(( k + 4 ))
-	python3 "$REPO_DIR/src/testing_fitness.py" "Q"$j"_"$num_instances_per_team "headless_false" $k_enemy&
+	k=$(( ((j % 4) + 1) + 4 ))
+
+	python3 "$REPO_DIR/src/testing_fitness.py" "Q"$j"_"$num_instances_per_team "headless_false" $k&
 	for ((i = split; i <= num_instances_per_team -1; i++)); do
 	    echo "Running instance $i"
-	    python3 "$REPO_DIR/src/testing_fitness.py" "Q"$k"_"$i "headless_true" $k_enemy&
-	    sleep 0.75;
+	    python3 "$REPO_DIR/src/testing_fitness.py" "Q"$j"_"$i "headless_true" $k&
+	    sleep 1.5;
 	done
 done
 

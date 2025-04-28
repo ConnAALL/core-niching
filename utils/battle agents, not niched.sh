@@ -12,7 +12,7 @@ for ((j = 5; j <= 8; j++)); do
 	for ((i = 1; i <= num_instances_per_team-1; i++)); do
 	    echo "Running instance $i"
 	    python3 "$REPO_DIR/src/testing_fitness.py" "Q"$j"_"$i "headless_true" $j&
-	    sleep 1;
+	    sleep 1.5;
 	    # Note that headless MUST be false if agents have limited lives
 	done
 done
