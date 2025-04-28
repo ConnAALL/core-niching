@@ -20,19 +20,7 @@ for ((j = 1; j <= 4; j++)); do
 	done
 done
 
-for ((j = 1; j <= 4; j++)); do	
-	k=$(( ((j % 4) + 1) + 4 ))
-
-	python3 "$REPO_DIR/src/testing_fitness.py" "Q"$j"_"$num_instances_per_team "headless_false" $k&
-	for ((i = split; i <= num_instances_per_team -1; i++)); do
-	    echo "Running instance $i"
-	    python3 "$REPO_DIR/src/testing_fitness.py" "Q"$j"_"$i "headless_true" $k&
-	    sleep 1.5;
-	done
-done
-
 wait;
 
 
 echo "All $num_instances instances have been started.";
-
