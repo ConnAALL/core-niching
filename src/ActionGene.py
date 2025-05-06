@@ -54,7 +54,7 @@ class ActionGene:
                     ai.turn(-1 * self.turn_quantity)  # Turn clockwise
                 elif angle < -30:
                     ai.turn(self.turn_quantity)       # Turn counter-clockwise
-                elif 30 > angle > -30 and max_wall_angle > 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
+                elif 30 > angle > -30 and max_wall_angle >= 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
                     ai.turn(self.turn_quantity)
                 elif 30 > angle > -30 and max_wall_angle < 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
                     ai.turn(self.turn_quantity * -1)
@@ -70,7 +70,7 @@ class ActionGene:
                     ai.turn(-1 * self.turn_quantity)  # Turn clockwise
                 elif angle < -30:
                     ai.turn(self.turn_quantity)       # Turn counter-clockwise
-                elif 30 > angle > -30 and max_wall_angle > 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
+                elif 30 > angle > -30 and max_wall_angle >= 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
                     ai.turn(self.turn_quantity)
                 elif 30 > angle > -30 and max_wall_angle < 0: # If we are facing the closest wall, turn to farthest wall as a failsafe 
                     ai.turn(self.turn_quantity * -1)
