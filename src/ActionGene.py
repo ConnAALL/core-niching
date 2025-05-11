@@ -22,7 +22,7 @@ class ActionGene:
         self.thrust = 0                                   # Thrust starts at 0
         if gene[2] <= turn_roll and gene[2] > 0 and self.agent.agent_data["speed"] < 10:          # If we have a chance of thrusting this frame, thrust if we roll lower or equal to our chance, speed limit 10
             self.thrust = 1     
-        self.turn_quantity = int((gene[3] + 0) * 15)     # Scaling factor for turn amount, turn amount doesnt directly correspond to degrees
+        self.turn_quantity = int((gene[3] + 0) * 10)     # Scaling factor for turn amount, turn amount doesnt directly correspond to degrees
         self.turn_target = gene[4]                        # Target to turn towards (0-7 encoded values)
         # Execute the actions immediately upon gene creation
         self.act(gene)
