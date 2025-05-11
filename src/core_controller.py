@@ -492,6 +492,8 @@ def loop():
                     print(f"At gene {agent.current_loop_idx}.")
                 # Process jump genes (control flow instructions)
                 if Evolver.is_jump_gene(gene): # If we have reached a jump gene
+                    ai.turnRight(0)
+                    ai.turnLeft(0)
                     jump_to = agent.check_conditionals() # Find highest prority conditional
                     if jump_to != -1: 
                         agent.current_loop_idx = jump_to # Jump to highest prority conditional
