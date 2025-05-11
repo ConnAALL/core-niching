@@ -2,15 +2,12 @@ from Engine import libpyAI as ai
 import os
 import sys
 import traceback
-import json
-import uuid
 import time
 from dotenv import load_dotenv
 from ShipData import ShipData
 from Evolver import Evolver
 from ActionGene import ActionGene
 import csv 
-import random 
 from datetime import datetime, timezone
 import ast
 
@@ -30,7 +27,6 @@ class CoreAgent(ShipData):
         # Ship/bot data
         ShipData.__init__(self)
         self.bot_name = bot_name
-        #self.interface = AgentInterface(bot_name)
         
         # Directories
         self.repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -65,6 +61,7 @@ class CoreAgent(ShipData):
         # Initial score
         self.num_kills = 0
         self.num_self_deaths = 0
+        self.num_deaths = 0
         self.score = 0
         self.movement_timer = -1.0
         self.chromosome_iteration = 0
@@ -87,6 +84,7 @@ class CoreAgent(ShipData):
         # Misc 
         self.generate_feelers() # Generate initial feelers
         self.debug = debug # Set to true if we want to print out a bunch of info about the agent while its running
+        self.friendly_fire(ff = True) # Set to false if we want to ignore ships on our team
 
     def increment_gene_idx(self):
         reset = True if self.GENES_PER_LOOP == self.current_gene_idx + 1 else False # Return true if we looped around
@@ -113,7 +111,7 @@ class CoreAgent(ShipData):
             csv_file_path = os.path.join(self.data_path, f'{self.bot_name}.csv')
             with open(csv_file_path, mode='w', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file)
-                csv_writer.writerow(['Kills', 'Self Deaths', 'Cause of Death', 'Binary Chromosome', 'Time Born'])  # Things we track
+                csv_writer.writerow(['Kills', 'Self Deaths', 'Total Deaths', 'Cause of Death', 'Binary Chromosome', 'Time Born'])  # Things we track
             print(f"CSV file created successfully at {csv_file_path}")
             return csv_file_path # Give csv_file_path to use later
         except Exception as e:
@@ -139,7 +137,7 @@ class CoreAgent(ShipData):
                 csv_rows = list(csv.reader(csvfile))
                 if len(csv_rows) > 1:  # If we have data rows beyond header
                     last_row = csv_rows[-1]
-                    last_chromosome_str = last_row[3]  # Binary chromosome is in column 4
+                    last_chromosome_str = last_row[4]  # Binary chromosome is in column 5
                     try:
                         last_chromosome = ast.literal_eval(last_chromosome_str)
                         print(f"Found existing chromosome for {self.bot_name}")
@@ -193,6 +191,7 @@ class CoreAgent(ShipData):
             data_row = [
                 self.num_kills,         # Kills
                 self.num_self_deaths,   # Self Deaths
+                self.num_deaths,        # Total Deaths
                 cause_of_death,         # Cause of Death
                 self.bin_chromosome,     # Binary Chromosome
                 self.time_born           # Time Born
@@ -223,8 +222,10 @@ class CoreAgent(ShipData):
         
         print(f"Last death is {self.last_death}")
         print(f"Current Score: {self.score}")
+        
+        self.update_score() # Update score to current score, because score is used for kill tracking
 
-        if "null" in self.last_death:  # If ran into wall, dont crossover, just mutate
+        if "null" in self.last_death: 
             print(f"Agent {self.bot_name} ran into wall (or self destructed some other way)")
             self.num_self_deaths += 1
             agent.regeneration_pause = True # Regeneration pause penalty if self death
@@ -232,7 +233,8 @@ class CoreAgent(ShipData):
         if ai.selfAlive() == 0 and self.crossover_completed is False:
             killer = self.last_death[0]  # Get killer name
             killer_csv = os.path.join(self.data_path, f'{killer}.csv')  # Construct killer's CSV path
-            
+            self.num_deaths += 1
+
             if killer != 'null':
                 print(f"{killer} killed {self.bot_name}")
                 try:
@@ -242,9 +244,9 @@ class CoreAgent(ShipData):
                         csv_rows = list(csv.reader(csvfile))
                         if len(csv_rows) > 1:  # Make sure we have data rows beyond the header
                             last_row = csv_rows[-1]
-                            killer_chromosome_str = last_row[3]  # Binary chromosome is in column 4
+                            killer_chromosome_str = last_row[4]  # Binary chromosome is in column 5
                             killer_chromosome = None
-                            killer_time_of_birth = float(last_row[4])
+                            killer_time_of_birth = float(last_row[5])
                             try:
                                 killer_chromosome = ast.literal_eval(killer_chromosome_str)
                             except (ValueError, SyntaxError) as parse_error:
@@ -330,7 +332,7 @@ class CoreAgent(ShipData):
             print(f"Closest wall (heading) is {min_wall_dist_heading} away")
             print(f"Closest wall (tracking) is {min_wall_dist_tracking} away")
             print(f"Closest bullet is {self.bullet_data['distance']} away")
-            print(f"Closest enemy is {self.enemy_data['distance']} away")
+            print(f"Closest enemy is {self.enemy_data['name']} and is {self.enemy_data['distance']} away")
             print(f"Speed is {self.agent_data['speed']}")
 
         # List of all possible conditions that can be checked
@@ -340,27 +342,27 @@ class CoreAgent(ShipData):
             self.agent_data["speed"] == 0,                  # 1: Ship is not moving
             
             # Enemy-based conditions 1
-            self.enemy_data["distance"] < 200 and self.enemy_data["distance"] > 100,             # 2: Enemy far but still visable (< 200 units)
+            self.enemy_data["distance"] < 250 and self.enemy_data["distance"] > 150,             # 2: Enemy far but still visable (< 250 units)
 
             # Wall distance thresholds 1
-            min_wall_dist_heading < 200 and min_wall_dist_heading > 100,                           # 3: Wall sort of close (< 200 units)
+            min_wall_dist_heading < 300 and min_wall_dist_heading > 150,                           # 3: Wall sort of close (< 300 units)
 
             # Bullet distance thresholds 1
-            self.bullet_data["distance"] < 150 and self.bullet_data["distance"] > 75,             # 4: Bullet sort of close (< 150 units)
+            self.bullet_data["distance"] < 150 and self.bullet_data["distance"] > 80,             # 4: Bullet sort of close (< 150 units)
 
             # Speed-based conditions
-            self.agent_data["speed"] < 5,                  # 5: Speed too low (< 5)
-            self.agent_data["speed"] > 12,                 # 6: Speed too high (> 12)
+            self.agent_data["speed"] < 3,                  # 5: Speed too low (< 3)
+            self.agent_data["speed"] > 10,                 # 6: Speed too high (> 10)
 
             # Difference in tracking and heading thresholds 
             direction_diff > 100,                          # 7: Ship is very off course (< 100 degrees)
             direction_diff > 30 and direction_diff < 100,                           # 8: Ship is a bit off course (< 30 degrees)
 
             # Enemy-based conditions 2
-            self.enemy_data["distance"] < 100 and self.enemy_data["distance"] > -1,             # 9: Enemy within firing distance (< 100 units)
+            self.enemy_data["distance"] < 150 and self.enemy_data["distance"] > -1,             # 9: Enemy within firing distance (< 100 units)
 
             # Wall distance thresholds 2
-            min_wall_dist_heading < 100 and min_wall_dist_heading > -1,                            # 10: Wall very close (< 100 units)
+            min_wall_dist_heading < 150 and min_wall_dist_heading > -1,                            # 10: Wall very close (< 100 units)
 
             # Bullet distance thresholds 2
             self.bullet_data["distance"] < 80 and self.bullet_data["distance"] > -1           # 11: Bullet very close (< 80 units)

@@ -43,7 +43,7 @@ Note that root/testing fitnesses is preloaded with agents that have already been
 10. Navigate to root/testing fitnesses
 11. Run all cells in compare mix and match.ipynb to get a graph of the agents performance over time, note that by default the graphs go from 0 mins to 864 mins, and 0 kills to 12000 kills, you can adjust that at the top of the last cell
 
-## To test our agents fitness (Non niched agents vs niched agents):
+## To test our agents fitness (non niched agents vs niched agents):
 Note that root/testing fitnesses is preloaded with agents that have already been trained for 72 hours, so to run the best agents, we can run the agents already in testing fitnesses
 1. Train niched agents or use best agents
 2. Cut all data saved in root/data

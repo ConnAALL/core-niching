@@ -2,15 +2,12 @@ from Engine import libpyAI as ai
 import os
 import sys
 import traceback
-import json
-import uuid
 import time
 from dotenv import load_dotenv
 from ShipData import ShipData
 from Evolver import Evolver
 from ActionGene import ActionGene
 import csv 
-import random 
 from datetime import datetime, timezone
 import ast
 
