@@ -1,5 +1,5 @@
 High Prority:
-
+1: Agents seem to crash more with the latest change to the action gene
 
 Low Prority:
 
