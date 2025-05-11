@@ -24,7 +24,6 @@ class ActionGene:
             self.thrust = 1     
         self.turn_quantity = int((gene[3] + 0) * 15)     # Scaling factor for turn amount, turn amount doesnt directly correspond to degrees
         self.turn_target = gene[4]                        # Target to turn towards (0-7 encoded values)
-        self.action_priority = gene[5]                       # 0 if we prioritize thrusting over turning on this action, else 1
         # Execute the actions immediately upon gene creation
         self.act(gene)
 
@@ -206,16 +205,6 @@ class ActionGene:
 
         # Fire if shoot is True
         ai.fireShot() if self.shoot else None
-
-        # Turning and thrusting must be mutually exclusive
-        if self.thrust == 1 and gene[3] > 0 and self.action_priority == 0: 
-                ai.thrust(self.thrust)
-                #ai.turnRight(0)
-                #ai.turnLeft(0)
-                return
-        elif self.thrust == 1 and gene[3] > 0 and self.action_priority == 1:
-                self.turn()
-                return
 
         # Apply thrust (0 = no thrust, 1 = thrust on)
         ai.thrust(self.thrust)
