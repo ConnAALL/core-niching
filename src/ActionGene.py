@@ -61,7 +61,7 @@ class ActionGene:
         Args:
             degree (float): Heading to turn to
         """
-        ai.thrust(0)
+        #ai.thrust(0)
         starting = self.agent.agent_data["head_feelers"][0][1]
         delta = self.angle_diff(starting, degree)
         if abs(delta) > 0:
@@ -86,7 +86,7 @@ class ActionGene:
         
         The turn_quantity parameter controls how sharp the turn is.
         """
-        ai.thrust(0)
+        #ai.thrust(0)
         # Use match-case statement to select turning behavior
         match self.turn_target:
             # Case 0: Turn away from the nearest wall (heading)
