@@ -41,7 +41,7 @@ def clean():
             continue
 
         # 3. Grab the last row
-        last_row = rows[-1]
+        last_row = rows[-2]
 
         # 4a. Zero out the first three fields
         for i in range(min(3, len(last_row))):
