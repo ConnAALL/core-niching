@@ -32,16 +32,21 @@ def clean():
                 print(f"Deleted {csv_path.name} (m={m.group(1)} > 30)")
                 continue
 
-        # 2. Read all rows properly
-        with csv_path.open('r', newline='', encoding='utf-8') as infile:
-            rows = list(csv.reader(infile))
+        try:
+            with csv_path.open('r', newline='', encoding='utf-8') as infile:
+                rows = list(csv.reader(infile))
+        except Exception as e:
+            print(f"Error reading {csv_path}: {e}")
+
+
+            
 
         if not rows:
             # skip empty files
             continue
 
         # 3. Grab the last row
-        last_row = rows[-2]
+        last_row = rows[-1]
 
         # 4a. Zero out the first three fields
         for i in range(min(3, len(last_row))):
