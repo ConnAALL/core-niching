@@ -12,8 +12,8 @@ from datetime import datetime, timezone
 import ast
 
 load_dotenv()
-DEFAULT_HEADLESS = os.getenv("DEFAULT_HEADLESS") 
-SERVER_IP = os.getenv("SERVER_IP")
+DEFAULT_HEADLESS = os.getenv("DEFAULT_HEADLESS", "headless_true") # HEADLESS state defined by env, otherwise just assume headless 
+SERVER_IP = os.getenv("SERVER_IP", "localhost") # Server ip defined by env, if no env just default to localhost
 
 # Get the directory of the current script
 current_dir = os.path.dirname(os.path.realpath(__file__))
