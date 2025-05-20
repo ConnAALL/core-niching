@@ -53,8 +53,6 @@ class CoreAgent(ShipData):
         self.current_loop_started = False
 
         # Hardcoded robot capability
-        # So for power, I ran the system for around 24 hours at 5 power, 8 power, 10 power and 20 power, it seems like the smaller powers have a better self death to kill ratio, but this is the unmodifed action gene, and I think I ran the lower power systems for longer so they had more a chance to evolve
-        # anyway, 5 did the best but 8 followed pretty closely behind, and 8 seems like the minimum power that you need to be to recover when blown off course by another agent exploding, so thats why its 8 for now
         ai.setPower(8.0) # Power 5-55, amount of thrust
         ai.setTurnSpeed(64.0) # Turn speed 5-64
 
@@ -492,8 +490,6 @@ def loop():
                     print(f"At gene {agent.current_loop_idx}.")
                 # Process jump genes (control flow instructions)
                 if Evolver.is_jump_gene(gene): # If we have reached a jump gene
-                    #ai.turnRight(0)
-                    #ai.turnLeft(0)
                     jump_to = agent.check_conditionals() # Find highest prority conditional
                     if jump_to != -1: 
                         agent.current_loop_idx = jump_to # Jump to highest prority conditional
