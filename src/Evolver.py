@@ -195,10 +195,9 @@ class Evolver():
                     thrust = int(instruction_gene[2:4], 2) # Bit is the chance of thrusting (speed up for a frame), 00 = no thrust, 01 = 33% chance, 10 = 66% chance, 11 = 100% chance 
                     turn_quantity = int(instruction_gene[4:7], 2) # Make turn quantity with 3 bit integer in binary rep, bits 4-6, number 0-7
                     turn_target = int(instruction_gene[7:10], 2) # Make turn target with 3 bit integer in binary rep, bits 6-9, number 0-7 all correspond to different targets
-                    action_priority = int((instruction_gene[10])) # 0 if we prioritize thrusting over turning on this action, else 1
                     # Structure: True (indicates action gene), shoot, thrust, turn_quantity, turn_target, action_priority
                     loop.append([True, shoot, thrust, turn_quantity,
-                                turn_target, action_priority])
+                                turn_target])
             loops.append(loop)
         return loops
     
@@ -222,7 +221,7 @@ class Evolver():
             loop = []
             for i in range(9): 
                 gene = ""
-                for j in range(11): 
+                for j in range(10): 
                     # First gene in a loop is always a jump gene (bit 0 = '1')
                     if i == 0 and j == 0:  
                         gene += "1"

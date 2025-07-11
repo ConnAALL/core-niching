@@ -2,7 +2,7 @@
 """
 clean_current_csvs.py
 
-1. Delete any CSV named CA_Qn_m.csv with m > 15
+1. Delete any CSV named CA_Qn_m.csv with m > 30
 2. For the rest:
    - Read with csv.reader (so quoted commas stay inside a single field)
    - Take only the last row
@@ -29,12 +29,17 @@ def clean():
         if m:
             if int(m.group(1)) > 30:
                 csv_path.unlink()
-                print(f"Deleted {csv_path.name} (m={m.group(1)} > 15)")
+                print(f"Deleted {csv_path.name} (m={m.group(1)} > 30)")
                 continue
 
-        # 2. Read all rows properly
-        with csv_path.open('r', newline='', encoding='utf-8') as infile:
-            rows = list(csv.reader(infile))
+        try:
+            with csv_path.open('r', newline='', encoding='utf-8') as infile:
+                rows = list(csv.reader(infile))
+        except Exception as e:
+            print(f"Error reading {csv_path}: {e}")
+
+
+            
 
         if not rows:
             # skip empty files
