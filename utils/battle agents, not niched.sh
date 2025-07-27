@@ -5,6 +5,11 @@ REPO_DIR="$(dirname "$SCRIPT_DIR")"
 # Set the number of instances you want to run
 num_instances_per_team=15;
 
+# Assumes you are using a virtual environment located in the repo root/.venv, delete the following 2 lines if you want to use your global python installation,
+# or edit them if you want to use a different virtual environment
+cd "$REPO_DIR/.venv" || { echo "Failed to change directory to .venv"; exit 1; }
+source bin/activate || { echo "Failed to activate virtual environment"; exit 1; }
+
 # Loop from 1 to num_instances_per_team-1
 for ((j = 5; j <= 8; j++)); do	
 	# 1 not headless so we can see whats going on

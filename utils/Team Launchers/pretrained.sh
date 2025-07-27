@@ -6,6 +6,10 @@ REPO_DIR=$(dirname "$(dirname "$SCRIPT_DIR")")
 num_agents=32
 not_headless=1
 
+# Assumes you are using a virtual environment located in the repo root/.venv, delete the following 2 lines if you want to use your global python installation,
+# or edit them if you want to use a different virtual environment
+cd "$REPO_DIR/.venv" || { echo "Failed to change directory to .venv"; exit 1; }
+source bin/activate || { echo "Failed to activate virtual environment"; exit 1; }
 
 # Launch not headless agents 
 for ((i = 1; i <= not_headless; i++)); do	

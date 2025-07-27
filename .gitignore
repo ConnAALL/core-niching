@@ -1,10 +1,5 @@
 __pycache__
+.venv
 .env
-src/chromosome.py
-src/old_core_controller_ref.py
 tracebacks/*
 data/*
-back.py
-queue_server.log
-aaron_core_controller.py
-old_ActionGene.py
