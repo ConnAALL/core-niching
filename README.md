@@ -1,7 +1,7 @@
 # core-niching
 - Using a unique competitive coevolution method to niche agents in the game Xpilot to quadrants on "the core" map
 - Each agent spawns with a unique chromosome that determines their actions, crossover happens when one agent shoots another
-- Work up to May 4th 2025 was documented and [presented](https://docs.google.com/presentation/d/1PvMrOg0gD0Rf9me3HLC0duRAI0g9anFMiGSZoE4nqOo/edit?usp=sharing) during the COM 496 research presentations on May 5th 2025
+- This works results are documented in the paper [Niching Agents in The Core](https://www.researchgate.net/publication/393960007_Niching_Agents_in_The_Core)
 
 ## Requirements
 1. Computer made after the year 1995 running some sort of linux distro
